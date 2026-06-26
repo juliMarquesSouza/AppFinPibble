@@ -2,7 +2,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const API_URL = 'http://localhost:3333';
+export const API_URL = 'https://api-finpibble-production.up.railway.app';
 
 const TOKEN_KEY = '@finpibble:token';
 const USER_KEY = '@finpibble:user';

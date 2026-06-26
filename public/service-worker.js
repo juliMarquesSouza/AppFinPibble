@@ -1,6 +1,10 @@
 /* global caches, fetch, self, URL */
 
-const CACHE_NAME = 'finpibble-pwa-v1';
+const CACHE_NAME = 'finpibble-pwa-v2';
+const API_HOSTS = new Set([
+  'api-finpibble-production.up.railway.app',
+  'localhost'
+]);
 const APP_SHELL = [
   '/',
   '/manifest.webmanifest',
@@ -37,7 +41,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (url.pathname.startsWith('/api') || url.hostname === 'localhost' && url.port === '3333') {
+  if (url.pathname.startsWith('/api') || API_HOSTS.has(url.hostname)) {
     return;
   }
 
