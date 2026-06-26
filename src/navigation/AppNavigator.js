@@ -54,7 +54,7 @@ export default function AppNavigator() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer documentTitle={{ formatter: () => 'FinPibble' }}>
       <Stack.Navigator
         initialRouteName={initialRouteName}
         screenOptions={{

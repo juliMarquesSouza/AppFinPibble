@@ -2,7 +2,7 @@ import js from '@eslint/js';
 import { defineConfig, globalIgnores } from 'eslint/config';
 
 export default defineConfig([
-  globalIgnores(['node_modules', '.expo']),
+  globalIgnores(['node_modules', '.expo', 'dist']),
   {
     files: ['**/*.js'],
     extends: [js.configs.recommended],

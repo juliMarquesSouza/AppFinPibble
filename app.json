@@ -23,6 +23,15 @@
         "backgroundColor": "#F8F7FC"
       },
       "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./src/assets/logoPibble.png",
+      "name": "FinPibble",
+      "shortName": "FinPibble",
+      "themeColor": "#7C6AED",
+      "backgroundColor": "#F8F7FC",
+      "display": "standalone",
+      "orientation": "portrait"
     }
   }
 }
