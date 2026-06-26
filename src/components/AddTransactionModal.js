@@ -1,140 +1,244 @@
-import { useState } from 'react';
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { CalendarDays, Coins, Tag } from 'lucide-react-native';
 
-import { accounts, categories } from '../data/mockData';
 import { colors } from '../theme/colors';
 import Input from './Input';
 import PrimaryButton from './PrimaryButton';
 
-export default function AddTransactionModal({ onAdd, onClose, visible }) {
-  const [account, setAccount] = useState(accounts[0].name);
+const categories = [
+  'Casa',
+  'Mercado',
+  'Transporte',
+  'Lazer',
+  'Saúde',
+  'Receita',
+  'Investimentos'
+];
+
+function todayInputValue() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function isoToBrazilDate(value) {
+  if (!value) {
+    return '';
+  }
+
+  const [year, month, day] = value.slice(0, 10).split('-');
+  return day && month && year ? `${day}/${month}/${year}` : value;
+}
+
+function brazilDateToIso(value) {
+  if (!value) {
+    return todayInputValue();
+  }
+
+  if (value.includes('-')) {
+    return value.slice(0, 10);
+  }
+
+  const [day, month, year] = value.split('/');
+  return day && month && year ? `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}` : value;
+}
+
+export default function AddTransactionModal({
+  accounts = [],
+  editingTransaction,
+  loading = false,
+  onAdd,
+  onClose,
+  visible
+}) {
+  const [accountId, setAccountId] = useState(accounts[0]?.id);
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState(categories[0]);
+  const [date, setDate] = useState(isoToBrazilDate(todayInputValue()));
   const [title, setTitle] = useState('');
-  const [type, setType] = useState('expense');
-  const canSubmit = title && amount;
+  const [type, setType] = useState('income');
+  const canSubmit = title && amount && accountId;
 
-  const submit = () => {
+  useEffect(() => {
+    if (accounts.length && !accounts.some((account) => account.id === accountId)) {
+      setAccountId(accounts[0].id);
+    }
+  }, [accountId, accounts]);
+
+  useEffect(() => {
+    if (!visible) {
+      return;
+    }
+
+    if (editingTransaction) {
+      setAccountId(editingTransaction.accountId);
+      setAmount(String(Math.abs(editingTransaction.amount)).replace('.', ','));
+      setCategory(editingTransaction.category || categories[0]);
+      setDate(isoToBrazilDate(editingTransaction.rawDate || editingTransaction.date));
+      setTitle(editingTransaction.title || editingTransaction.description || '');
+      setType(editingTransaction.type || 'income');
+      return;
+    }
+
+    setAccountId(accounts[0]?.id);
+    setAmount('');
+    setCategory(categories[0]);
+    setDate(isoToBrazilDate(todayInputValue()));
+    setTitle('');
+    setType('income');
+  }, [accounts, editingTransaction, visible]);
+
+  const submit = async () => {
     const parsedAmount = Number(amount.replace(',', '.'));
 
     if (!canSubmit || Number.isNaN(parsedAmount)) {
       return;
     }
 
-    onAdd({
-      id: `local-${Date.now()}`,
+    await onAdd({
+      description: title,
       title,
       category,
-      account,
-      amount: type === 'income' ? Math.abs(parsedAmount) : -Math.abs(parsedAmount),
-      type,
-      date: 'Agora'
+      accountId,
+      amount: Math.abs(parsedAmount),
+      date: brazilDateToIso(date),
+      type
     });
 
     setAmount('');
     setTitle('');
-    setType('expense');
+    setType('income');
     setCategory(categories[0]);
-    setAccount(accounts[0].name);
+    setDate(isoToBrazilDate(todayInputValue()));
+    setAccountId(accounts[0]?.id);
   };
 
   return (
     <Modal animationType="slide" transparent visible={visible} onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <View style={styles.sheet}>
-          <View style={styles.handle} />
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.title}>Nova transação</Text>
-              <Text style={styles.subtitle}>Adicione um lançamento mockado ao resumo.</Text>
+          <ScrollView
+            contentContainerStyle={styles.sheetContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.handle} />
+            <View style={styles.header}>
+              <View>
+                <Text style={styles.title}>{editingTransaction ? 'Editar transação' : 'Nova transação'}</Text>
+                <Text style={styles.subtitle}>Adicione ou ajuste um lançamento do seu resumo.</Text>
+              </View>
+              <TouchableOpacity activeOpacity={0.72} onPress={onClose} style={styles.closeButton}>
+                <Text style={styles.closeText}>Fechar</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity activeOpacity={0.72} onPress={onClose} style={styles.closeButton}>
-              <Text style={styles.closeText}>Fechar</Text>
-            </TouchableOpacity>
-          </View>
 
-          <View style={styles.segmented}>
-            <TouchableOpacity
-              activeOpacity={0.82}
-              onPress={() => setType('expense')}
-              style={[styles.segment, type === 'expense' && styles.segmentActive]}
-            >
-              <Text style={[styles.segmentText, type === 'expense' && styles.segmentTextActive]}>
-                Despesa
+            <View style={styles.segmented}>
+              <TouchableOpacity
+                activeOpacity={0.82}
+                onPress={() => setType('income')}
+                style={[styles.segment, styles.incomeSegment, type === 'income' && styles.incomeSegmentActive]}
+              >
+                <Text style={[styles.segmentText, styles.incomeSegmentText, type === 'income' && styles.segmentTextActive]}>
+                  Receita
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                activeOpacity={0.82}
+                onPress={() => setType('expense')}
+                style={[styles.segment, styles.expenseSegment, type === 'expense' && styles.expenseSegmentActive]}
+              >
+                <Text style={[styles.segmentText, styles.expenseSegmentText, type === 'expense' && styles.segmentTextActive]}>
+                  Despesa
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.form}>
+              <Input
+                icon={Tag}
+                label="Descrição"
+                onChangeText={setTitle}
+                placeholder="Descrição da transação"
+                value={title}
+              />
+              <Input
+                icon={Coins}
+                keyboardType="decimal-pad"
+                label="Valor"
+                onChangeText={setAmount}
+                placeholder="Valor da transação"
+                value={amount}
+              />
+              <View style={styles.dateWrapper}>
+                <Text style={styles.dateLabel}>Data</Text>
+                <View style={styles.dateField}>
+                  <CalendarDays size={20} color={colors.muted} />
+                  <TextInput
+                    keyboardType="numeric"
+                    onChangeText={(value) => setDate(Platform.OS === 'web' ? isoToBrazilDate(value) : value)}
+                    placeholder="11/12/2005"
+                    placeholderTextColor={colors.muted}
+                    style={styles.dateInput}
+                    type={Platform.OS === 'web' ? 'date' : undefined}
+                    value={Platform.OS === 'web' ? brazilDateToIso(date) : date}
+                  />
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.pickSection}>
+              <Text style={styles.pickLabel}>Categoria</Text>
+              <View style={styles.chips}>
+                {categories.map((item) => (
+                  <TouchableOpacity
+                    activeOpacity={0.82}
+                    key={item}
+                    onPress={() => setCategory(item)}
+                    style={[styles.chip, category === item && styles.chipActive]}
+                  >
+                    <Text style={[styles.chipText, category === item && styles.chipTextActive]}>
+                      {item}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.pickSection}>
+              <Text style={styles.pickLabel}>
+                {type === 'income' ? 'Conta de destino' : 'Conta de origem'}
               </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              activeOpacity={0.82}
-              onPress={() => setType('income')}
-              style={[styles.segment, type === 'income' && styles.segmentActive]}
-            >
-              <Text style={[styles.segmentText, type === 'income' && styles.segmentTextActive]}>
-                Receita
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.form}>
-            <Input
-              icon={Tag}
-              label="Descrição"
-              onChangeText={setTitle}
-              placeholder="Mercado, salário..."
-              value={title}
-            />
-            <Input
-              icon={Coins}
-              keyboardType="decimal-pad"
-              label="Valor"
-              onChangeText={setAmount}
-              placeholder="0,00"
-              value={amount}
-            />
-          </View>
-
-          <View style={styles.pickSection}>
-            <Text style={styles.pickLabel}>Categoria</Text>
-            <View style={styles.chips}>
-              {categories.map((item) => (
-                <TouchableOpacity
-                  activeOpacity={0.82}
-                  key={item}
-                  onPress={() => setCategory(item)}
-                  style={[styles.chip, category === item && styles.chipActive]}
-                >
-                  <Text style={[styles.chipText, category === item && styles.chipTextActive]}>
-                    {item}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              <View style={styles.chips}>
+                {accounts.map((item) => (
+                  <TouchableOpacity
+                    activeOpacity={0.82}
+                    key={item.id}
+                    onPress={() => setAccountId(item.id)}
+                    style={[styles.chip, accountId === item.id && styles.chipActive]}
+                  >
+                    <Text style={[styles.chipText, accountId === item.id && styles.chipTextActive]}>
+                      {item.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              {!accounts.length ? (
+                <Text style={styles.emptyText}>Crie uma conta antes de adicionar transações.</Text>
+              ) : null}
             </View>
-          </View>
 
-          <View style={styles.pickSection}>
-            <Text style={styles.pickLabel}>Conta</Text>
-            <View style={styles.chips}>
-              {accounts.slice(0, 3).map((item) => (
-                <TouchableOpacity
-                  activeOpacity={0.82}
-                  key={item.id}
-                  onPress={() => setAccount(item.name)}
-                  style={[styles.chip, account === item.name && styles.chipActive]}
-                >
-                  <Text style={[styles.chipText, account === item.name && styles.chipTextActive]}>
-                    {item.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            <View style={styles.dateHint}>
+              <CalendarDays size={18} color={colors.purple} />
+              <Text style={styles.dateHintText}>O saldo da conta será atualizado ao salvar.</Text>
             </View>
-          </View>
 
-          <View style={styles.dateHint}>
-            <CalendarDays size={18} color={colors.purple} />
-            <Text style={styles.dateHintText}>Data definida como agora para o mock.</Text>
-          </View>
-
-          <PrimaryButton disabled={!canSubmit} title="Adicionar" onPress={submit} />
+            <PrimaryButton
+              disabled={!canSubmit || !accounts.length}
+              loading={loading}
+              title={editingTransaction ? 'Salvar edição' : 'Adicionar'}
+              onPress={submit}
+            />
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -151,7 +255,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    maxHeight: '92%',
+    maxHeight: '92%'
+  },
+  sheetContent: {
     padding: 22
   },
   handle: {
@@ -206,16 +312,62 @@ const styles = StyleSheet.create({
   segmentActive: {
     backgroundColor: colors.softPurple
   },
+  incomeSegment: {
+    backgroundColor: '#E8F8EF'
+  },
+  incomeSegmentActive: {
+    backgroundColor: '#CFF3DE'
+  },
+  expenseSegment: {
+    backgroundColor: '#FDECEF'
+  },
+  expenseSegmentActive: {
+    backgroundColor: '#FAD2DA'
+  },
   segmentText: {
     color: colors.muted,
     fontSize: 14,
     fontWeight: '900'
+  },
+  incomeSegmentText: {
+    color: colors.success
+  },
+  expenseSegmentText: {
+    color: colors.danger
   },
   segmentTextActive: {
     color: colors.purple
   },
   form: {
     gap: 14
+  },
+  dateWrapper: {
+    gap: 8
+  },
+  dateLabel: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '700'
+  },
+  dateField: {
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderColor: '#ECECEC',
+    borderRadius: 20,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 12,
+    minHeight: 58,
+    paddingHorizontal: 18
+  },
+  dateInput: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    color: colors.text,
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
+    outlineStyle: 'none'
   },
   pickSection: {
     marginTop: 16
@@ -250,6 +402,12 @@ const styles = StyleSheet.create({
   },
   chipTextActive: {
     color: colors.purple
+  },
+  emptyText: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 8
   },
   dateHint: {
     alignItems: 'center',

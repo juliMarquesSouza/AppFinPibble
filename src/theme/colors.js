@@ -11,5 +11,30 @@ export const colors = {
   success: '#35B979',
   danger: '#EF6F7A',
   border: '#ECEAF4',
-  softPurple: '#F0EDFF'
+  softPurple: '#F0EDFF',
+  dark: {
+    background: '#100D1F',
+    surface: '#1A1530',
+    surfaceAlt: '#211A3A',
+    text: '#FFFFFF',
+    muted: '#C7C2D8',
+    border: 'rgba(255,255,255,.10)',
+    purpleGlow: '#8D6CFF',
+    incomeCard: '#182C24',
+    incomeCardAlt: '#1C3328',
+    incomeBorder: 'rgba(76,175,80,.26)',
+    incomeText: '#9BE7B5',
+    expenseCard: '#311C24',
+    expenseCardAlt: '#2A1920',
+    expenseBorder: 'rgba(244,67,54,.26)',
+    expenseText: '#FFB3C0',
+    goalCard: '#16302D',
+    goalBorder: 'rgba(38,166,154,.26)',
+    dueCard: '#2D2415',
+    dueBorder: 'rgba(255,193,7,.26)',
+    dueText: '#FFE19A',
+    tipCard: '#241B42',
+    tipBorder: 'rgba(124,92,255,.30)',
+    monthCard: '#20163D'
+  }
 };

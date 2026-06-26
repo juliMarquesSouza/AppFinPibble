@@ -2,27 +2,30 @@ import { ArrowDownLeft, ArrowUpRight } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { colors } from '../theme/colors';
+import { useAppearance } from '../theme/AppearanceContext';
 import { formatCurrency } from '../utils/formatters';
 
 export default function TransactionItem({ transaction }) {
+  const { appearance } = useAppearance();
+  const isDark = appearance.darkMode;
   const isIncome = transaction.type === 'income';
   const Icon = isIncome ? ArrowDownLeft : ArrowUpRight;
   const accent = isIncome ? colors.success : colors.danger;
 
   return (
     <View style={styles.item}>
-      <View style={[styles.iconWrap, { backgroundColor: `${accent}20` }]}>
+      <View style={[styles.iconWrap, { backgroundColor: isDark ? `${accent}30` : `${accent}20` }]}>
         <Icon size={20} color={accent} />
       </View>
       <View style={styles.info}>
-        <Text style={styles.title}>{transaction.title}</Text>
-        <Text style={styles.meta}>{transaction.category} • {transaction.account}</Text>
+        <Text style={[styles.title, isDark && styles.darkTitle]}>{transaction.title}</Text>
+        <Text style={[styles.meta, isDark && styles.darkMeta]}>{transaction.category} • {transaction.account}</Text>
       </View>
       <View style={styles.side}>
         <Text style={[styles.amount, { color: accent }]}>
           {isIncome ? '+' : ''}{formatCurrency(transaction.amount)}
         </Text>
-        <Text style={styles.date}>{transaction.date}</Text>
+        <Text style={[styles.date, isDark && styles.darkMeta]}>{transaction.date}</Text>
       </View>
     </View>
   );
@@ -68,5 +71,11 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 12,
     fontWeight: '600'
+  },
+  darkTitle: {
+    color: colors.dark.text
+  },
+  darkMeta: {
+    color: colors.dark.muted
   }
 });

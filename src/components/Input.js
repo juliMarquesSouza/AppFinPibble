@@ -46,10 +46,13 @@ const styles = StyleSheet.create({
     elevation: 2
   },
   input: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
     color: colors.text,
     flex: 1,
     fontSize: 16,
-    fontWeight: '600'
+    fontWeight: '600',
+    outlineStyle: 'none'
   },
   rightElement: {
     alignItems: 'center',

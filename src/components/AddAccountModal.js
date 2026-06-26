@@ -62,12 +62,12 @@ export default function AddAccountModal({ loading, onClose, onSubmit, visible })
           </View>
 
           <View style={styles.form}>
-            <Input label="Nome" onChangeText={setName} placeholder="Nubank" value={name} />
+            <Input label="Nome" onChangeText={setName} placeholder="Nome da conta" value={name} />
             <Input
               keyboardType="decimal-pad"
               label="Saldo inicial"
               onChangeText={setBalance}
-              placeholder="500,00"
+              placeholder="Saldo inicial"
               value={balance}
             />
           </View>

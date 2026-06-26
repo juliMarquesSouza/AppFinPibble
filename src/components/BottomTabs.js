@@ -2,6 +2,7 @@ import { BarChart3, PiggyBank, WalletCards } from 'lucide-react-native';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { colors } from '../theme/colors';
+import { useAppearance } from '../theme/AppearanceContext';
 
 const icons = {
   Dashboard: BarChart3,
@@ -16,9 +17,13 @@ const labels = {
 };
 
 export default function BottomTabs({ state, descriptors, navigation }) {
+  const { appearance } = useAppearance();
+  const backgroundColor = appearance.darkMode ? '#171426' : appearance.backgroundColor;
+  const isDark = appearance.darkMode;
+
   return (
-    <View style={styles.outer}>
-      <View style={styles.bar}>
+    <View style={[styles.outer, { backgroundColor }]}>
+      <View style={[styles.bar, isDark && styles.darkBar]}>
         {state.routes.map((route, index) => {
           const isFocused = state.index === index;
           const Icon = icons[route.name] || BarChart3;
@@ -44,10 +49,10 @@ export default function BottomTabs({ state, descriptors, navigation }) {
               activeOpacity={0.84}
               key={route.key}
               onPress={onPress}
-              style={[styles.tab, isFocused && styles.activeTab]}
+              style={[styles.tab, isFocused && styles.activeTab, isDark && isFocused && styles.darkActiveTab]}
             >
-              <Icon size={21} color={isFocused ? colors.purple : colors.muted} />
-              <Text style={[styles.label, isFocused && styles.activeLabel]}>
+              <Icon size={21} color={isFocused ? (isDark ? colors.card : colors.purple) : (isDark ? colors.dark.muted : colors.muted)} />
+              <Text style={[styles.label, isDark && styles.darkLabel, isFocused && styles.activeLabel, isDark && isFocused && styles.darkActiveLabel]}>
                 {labels[route.name] || route.name}
               </Text>
             </TouchableOpacity>
@@ -77,6 +82,11 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 7
   },
+  darkBar: {
+    backgroundColor: colors.dark.surface,
+    shadowColor: colors.dark.purpleGlow,
+    shadowOpacity: 0.18
+  },
   tab: {
     alignItems: 'center',
     borderRadius: 18,
@@ -88,6 +98,9 @@ const styles = StyleSheet.create({
   activeTab: {
     backgroundColor: colors.softPurple
   },
+  darkActiveTab: {
+    backgroundColor: 'rgba(124,106,237,.24)'
+  },
   label: {
     color: colors.muted,
     fontSize: 11,
@@ -95,5 +108,11 @@ const styles = StyleSheet.create({
   },
   activeLabel: {
     color: colors.purple
+  },
+  darkLabel: {
+    color: colors.dark.muted
+  },
+  darkActiveLabel: {
+    color: '#CDBDFF'
   }
 });

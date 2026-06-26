@@ -1,19 +1,27 @@
-/* global fetch */
+import { API_URL, apiRequest } from './apiClient';
 
-const API_URL = 'http://localhost:3333';
+export { API_URL };
+
+export async function getAccounts() {
+  return apiRequest('/accounts');
+}
 
 export async function createAccount(data) {
-  const response = await fetch(`${API_URL}/accounts`, {
+  return apiRequest('/accounts', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
     body: JSON.stringify(data)
   });
+}
 
-  if (!response.ok) {
-    throw new Error('Erro ao criar conta');
-  }
+export async function updateAccount(id, data) {
+  return apiRequest(`/accounts/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data)
+  });
+}
 
-  return response.json();
+export async function deleteAccount(id) {
+  return apiRequest(`/accounts/${id}`, {
+    method: 'DELETE'
+  });
 }

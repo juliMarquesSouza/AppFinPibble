@@ -5,7 +5,7 @@ import { colors } from '../theme/colors';
 
 export default function PremiumBackground() {
   return (
-    <View pointerEvents="none" style={styles.background}>
+    <View style={styles.background}>
       <LinearGradient
         colors={['#FFFFFF', colors.background, '#F4F1FF']}
         locations={[0, 0.55, 1]}
@@ -20,7 +20,8 @@ export default function PremiumBackground() {
 const styles = StyleSheet.create({
   background: {
     ...StyleSheet.absoluteFillObject,
-    overflow: 'hidden'
+    overflow: 'hidden',
+    pointerEvents: 'none'
   },
   blurCircle: {
     borderRadius: 999,

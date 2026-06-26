@@ -3,6 +3,7 @@ import { ActivityIndicator, Animated, StyleSheet, Text, TouchableOpacity, View }
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { colors } from '../theme/colors';
+import { useAppearance } from '../theme/AppearanceContext';
 
 export default function PrimaryButton({
   title,
@@ -13,9 +14,11 @@ export default function PrimaryButton({
   disabled = false,
   style
 }) {
+  const { appearance } = useAppearance();
   const scale = useRef(new Animated.Value(1)).current;
   const isPrimary = variant === 'primary';
   const isDisabled = disabled || loading;
+  const gradientColors = appearance.darkMode ? ['#9B7CFF', '#6C4DFF'] : [colors.purple, colors.purpleDark];
 
   const animatePress = (toValue) => {
     Animated.spring(scale, {
@@ -64,7 +67,7 @@ export default function PrimaryButton({
         onPressOut={() => animatePress(1)}
       >
         <LinearGradient
-          colors={[colors.purple, colors.purpleDark]}
+          colors={gradientColors}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={[styles.primary, isDisabled && styles.disabled]}

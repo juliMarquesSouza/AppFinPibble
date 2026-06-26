@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LockKeyhole, Mail, Send } from 'lucide-react-native';
 
 import AnimatedMascot from '../components/AnimatedMascot';
@@ -8,6 +8,7 @@ import FadeInView from '../components/FadeInView';
 import Input from '../components/Input';
 import PremiumBackground from '../components/PremiumBackground';
 import PrimaryButton from '../components/PrimaryButton';
+import { forgotPassword, login } from '../services/authService';
 import { colors } from '../theme/colors';
 
 const closedEyeMascot = require('../assets/pibbleOlhoFechado.png');
@@ -26,11 +27,6 @@ export default function Login({ navigation }) {
   const pawPulse = useRef(new Animated.Value(0)).current;
   const hasPassword = password.length > 0;
   const mascotsReady = loadedMascots >= 2;
-
-  useEffect(() => {
-    Image.prefetch(Image.resolveAssetSource(closedEyeMascot).uri);
-    Image.prefetch(Image.resolveAssetSource(peekingMascot).uri);
-  }, []);
 
   useEffect(() => {
     const pulse = Animated.loop(
@@ -61,17 +57,33 @@ export default function Login({ navigation }) {
     }).start();
   }, [passwordIconProgress, showPassword]);
 
-  const handleLogin = () => {
-    setLoading(true);
-
-    globalThis.setTimeout(() => {
-      setLoading(false);
+  const handleLogin = async () => {
+    try {
+      setLoading(true);
+      await login({ email, password });
       navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
-    }, 700);
+    } catch (error) {
+      if (error.message === 'Email não cadastrado') {
+        navigation.navigate('Signup', { email });
+        return;
+      }
+
+      Alert.alert('Não foi possível entrar', error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleForgot = () => {
-    setForgotSent(true);
+  const handleForgot = async () => {
+    try {
+      setLoading(true);
+      await forgotPassword(forgotEmail);
+      setForgotSent(true);
+    } catch (error) {
+      Alert.alert('Recuperação de senha', error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const closeForgot = () => {
@@ -104,7 +116,7 @@ export default function Login({ navigation }) {
   return (
     <AppLayout contentStyle={styles.container}>
       <PremiumBackground />
-      <View pointerEvents="none" style={styles.preloadMascots}>
+      <View style={styles.preloadMascots}>
         <Image source={closedEyeMascot} onLoadEnd={handleMascotLoaded} style={styles.preloadImage} />
         <Image source={peekingMascot} onLoadEnd={handleMascotLoaded} style={styles.preloadImage} />
       </View>
@@ -133,7 +145,7 @@ export default function Login({ navigation }) {
               keyboardType="email-address"
               label="Email"
               onChangeText={setEmail}
-              placeholder="juliana@email.com"
+              placeholder="email@exemplo.com"
               value={email}
             />
           </FadeInView>
@@ -147,7 +159,7 @@ export default function Login({ navigation }) {
                   setShowPassword(false);
                 }
               }}
-              placeholder="Sua senha"
+              placeholder="Digite sua senha"
               rightElement={
                 <TouchableOpacity
                   activeOpacity={0.78}
@@ -250,7 +262,7 @@ export default function Login({ navigation }) {
                 keyboardType="email-address"
                 label="Email"
                 onChangeText={setForgotEmail}
-                placeholder="juliana@email.com"
+                placeholder="email@exemplo.com"
                 style={styles.modalInput}
                 value={forgotEmail}
               />
@@ -259,6 +271,7 @@ export default function Login({ navigation }) {
             <PrimaryButton
               disabled={!forgotSent && !forgotEmail}
               icon={!forgotSent ? Send : undefined}
+              loading={loading}
               title={forgotSent ? 'Fechar' : 'Enviar instruções'}
               onPress={forgotSent ? closeForgot : handleForgot}
             />
@@ -284,6 +297,7 @@ const styles = StyleSheet.create({
     height: 1,
     opacity: 0.01,
     overflow: 'hidden',
+    pointerEvents: 'none',
     position: 'absolute',
     width: 1
   },

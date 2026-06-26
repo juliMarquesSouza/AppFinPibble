@@ -1,10 +1,12 @@
-import { ArrowLeft, Banknote, FileText, Send, Wallet } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import { Banknote, FileText, Send, Wallet } from 'lucide-react-native';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import AppLayout from '../components/AppLayout';
+import ScreenTopBar from '../components/ScreenTopBar';
 import TransactionItem from '../components/TransactionItem';
-import { accounts, transactions } from '../data/mockData';
+import { getTransactions } from '../services/transactionsService';
 import { colors } from '../theme/colors';
 import { formatCurrency } from '../utils/formatters';
 
@@ -18,18 +20,59 @@ const actions = [
 export default function BankAccount({ navigation, route }) {
   const account =
     route.params?.account ||
-    accounts.find((item) => item.id === route.params?.accountId) ||
-    accounts[0];
-  const accountTransactions = transactions.filter(
-    (transaction) => transaction.account === account.name || account.id === 'nubank'
-  );
+    {
+      id: route.params?.accountId,
+      name: 'Conta',
+      type: 'Conta financeira',
+      balance: 0,
+      color: colors.purple
+    };
+  const [accountTransactions, setAccountTransactions] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadTransactions() {
+      try {
+        const apiTransactions = await getTransactions();
+
+        if (!isMounted) {
+          return;
+        }
+
+        setAccountTransactions(
+          apiTransactions
+            .filter((transaction) => transaction.accountId === account.id)
+            .map((transaction) => ({
+              id: String(transaction.id),
+              title: transaction.description,
+              category: transaction.category,
+              account: transaction.account?.name || account.name,
+              amount: transaction.amount,
+              type: transaction.type,
+              date: new Date(transaction.date).toLocaleDateString('pt-BR', {
+                day: '2-digit',
+                month: 'short'
+              })
+            }))
+        );
+      } catch {
+        if (isMounted) {
+          setAccountTransactions([]);
+        }
+      }
+    }
+
+    loadTransactions();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [account.id, account.name]);
 
   return (
     <AppLayout>
-      <TouchableOpacity activeOpacity={0.82} onPress={() => navigation.goBack()} style={styles.backButton}>
-        <ArrowLeft size={20} color={colors.text} />
-        <Text style={styles.backText}>Voltar</Text>
-      </TouchableOpacity>
+      <ScreenTopBar navigation={navigation} />
 
       <LinearGradient
         colors={[account.color, colors.purpleDark]}
@@ -59,28 +102,19 @@ export default function BankAccount({ navigation, route }) {
 
       <Text style={styles.sectionTitle}>Histórico da conta</Text>
       <View style={styles.historyCard}>
-        {accountTransactions.map((transaction) => (
-          <TransactionItem key={transaction.id} transaction={transaction} />
-        ))}
+        {accountTransactions.length ? (
+          accountTransactions.map((transaction) => (
+            <TransactionItem key={transaction.id} transaction={transaction} />
+          ))
+        ) : (
+          <Text style={styles.emptyText}>Nenhuma transação registrada nesta conta.</Text>
+        )}
       </View>
     </AppLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  backButton: {
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 18,
-    paddingVertical: 6
-  },
-  backText: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: '900'
-  },
   accountHero: {
     borderRadius: 28,
     marginBottom: 18,
@@ -147,5 +181,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 22,
     paddingHorizontal: 16
+  },
+  emptyText: {
+    color: colors.muted,
+    fontSize: 13,
+    fontWeight: '700',
+    paddingVertical: 18,
+    textAlign: 'center'
   }
 });

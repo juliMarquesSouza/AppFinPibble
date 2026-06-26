@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { LockKeyhole, Mail, PiggyBank, Sparkles, Target, User } from 'lucide-react-native';
 
 import AnimatedMascot from '../components/AnimatedMascot';
@@ -8,6 +8,8 @@ import FadeInView from '../components/FadeInView';
 import Input from '../components/Input';
 import PremiumBackground from '../components/PremiumBackground';
 import PrimaryButton from '../components/PrimaryButton';
+import ScreenTopBar from '../components/ScreenTopBar';
+import { register } from '../services/authService';
 import { colors } from '../theme/colors';
 
 const goals = [
@@ -16,10 +18,11 @@ const goals = [
   { id: 'goal', label: 'Bater uma meta', icon: Target }
 ];
 
-export default function Signup({ navigation }) {
+export default function Signup({ navigation, route }) {
   const [goal, setGoal] = useState('organize');
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(route.params?.email || '');
+  const [loading, setLoading] = useState(false);
   const [password, setPassword] = useState('');
   const [successVisible, setSuccessVisible] = useState(false);
   const canSubmit = name && email && password;
@@ -29,16 +32,30 @@ export default function Signup({ navigation }) {
     navigation.reset({ index: 0, routes: [{ name: 'MainTabs' }] });
   };
 
+  const handleSignup = async () => {
+    try {
+      setLoading(true);
+      await register({ name, email, password, goal });
+      setSuccessVisible(true);
+    } catch (error) {
+      Alert.alert('Não foi possível criar a conta', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <AppLayout contentStyle={styles.container}>
       <PremiumBackground />
 
       <View style={styles.content}>
+        <ScreenTopBar navigation={navigation} />
+
         <AnimatedMascot delay={80} size={132} style={styles.mascot} />
 
         <FadeInView delay={260} style={styles.header}>
           <Text style={styles.title}>Criar conta</Text>
-          <Text style={styles.subtitle}>Monte seu FinPibble com dados mocados por enquanto.</Text>
+          <Text style={styles.subtitle}>Monte seu FinPibble e acompanhe seus dados reais.</Text>
         </FadeInView>
 
         <View style={styles.form}>
@@ -47,7 +64,7 @@ export default function Signup({ navigation }) {
               icon={User}
               label="Nome"
               onChangeText={setName}
-              placeholder="Juliana"
+              placeholder="Nome completo"
               value={name}
             />
           </FadeInView>
@@ -57,7 +74,7 @@ export default function Signup({ navigation }) {
               keyboardType="email-address"
               label="Email"
               onChangeText={setEmail}
-              placeholder="juliana@email.com"
+              placeholder="email@exemplo.com"
               value={email}
             />
           </FadeInView>
@@ -66,7 +83,7 @@ export default function Signup({ navigation }) {
               icon={LockKeyhole}
               label="Senha"
               onChangeText={setPassword}
-              placeholder="Crie uma senha"
+              placeholder="No mínimo 6 caracteres"
               secureTextEntry
               value={password}
             />
@@ -100,8 +117,9 @@ export default function Signup({ navigation }) {
         <FadeInView delay={900}>
           <PrimaryButton
             disabled={!canSubmit}
-            title="Começar"
-            onPress={() => setSuccessVisible(true)}
+            loading={loading}
+            title={loading ? 'Criando...' : 'Começar'}
+            onPress={handleSignup}
           />
         </FadeInView>
 
@@ -119,7 +137,7 @@ export default function Signup({ navigation }) {
             <Image source={require('../assets/mascotePibble.png')} style={styles.successMascot} />
             <Text style={styles.modalTitle}>Conta criada</Text>
             <Text style={styles.modalText}>
-              O Pibble já preparou um dashboard inicial com exemplos para você explorar.
+              O Pibble preparou seu acesso. Agora você já pode criar contas, transações e metas.
             </Text>
             <PrimaryButton title="Ir para o app" onPress={finishSignup} />
           </View>

@@ -4,12 +4,17 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { colors } from '../theme/colors';
 import { formatCurrency } from '../utils/formatters';
 
-export default function AccountCard({ account, icon: Icon, onPress }) {
+export default function AccountCard({ account, icon: Icon, onLongPress, onPress }) {
   const isNegative = account.balance < 0;
   const meta = account.institution ? `${account.type} • ${account.institution}` : account.type;
 
   return (
-    <TouchableOpacity activeOpacity={0.86} onPress={onPress} style={styles.card}>
+    <TouchableOpacity
+      activeOpacity={0.86}
+      onLongPress={onLongPress}
+      onPress={onPress}
+      style={styles.card}
+    >
       <View style={[styles.iconWrap, { backgroundColor: `${account.color}24` }]}>
         {Icon ? <Icon size={22} color={account.color} /> : null}
       </View>

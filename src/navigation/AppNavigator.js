@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -9,6 +11,8 @@ import Dashboard from '../screens/Dashboard';
 import Login from '../screens/Login';
 import Savings from '../screens/Savings';
 import Signup from '../screens/Signup';
+import { getToken } from '../services/apiClient';
+import { colors } from '../theme/colors';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -28,10 +32,29 @@ function MainTabs() {
 }
 
 export default function AppNavigator() {
+  const [initialRouteName, setInitialRouteName] = useState(null);
+
+  useEffect(() => {
+    async function loadInitialRoute() {
+      const token = await getToken();
+      setInitialRouteName(token ? 'MainTabs' : 'Login');
+    }
+
+    loadInitialRoute();
+  }, []);
+
+  if (!initialRouteName) {
+    return (
+      <View style={{ alignItems: 'center', backgroundColor: colors.background, flex: 1, justifyContent: 'center' }}>
+        <ActivityIndicator color={colors.purple} />
+      </View>
+    );
+  }
+
   return (
     <NavigationContainer>
       <Stack.Navigator
-        initialRouteName="Login"
+        initialRouteName={initialRouteName}
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: '#F8F7FC' }
