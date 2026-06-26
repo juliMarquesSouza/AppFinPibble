@@ -66,9 +66,15 @@ export default function BottomTabs({ state, descriptors, navigation }) {
 const styles = StyleSheet.create({
   outer: {
     backgroundColor: colors.background,
+    bottom: 0,
+    left: 0,
     paddingBottom: 14,
     paddingHorizontal: 18,
-    paddingTop: 8
+    paddingTop: 8,
+    position: 'absolute',
+    right: 0,
+    zIndex: 50,
+    elevation: 20
   },
   bar: {
     backgroundColor: colors.card,

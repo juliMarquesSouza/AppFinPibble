@@ -7,15 +7,16 @@ import Input from '../components/Input';
 import PrimaryButton from '../components/PrimaryButton';
 import ScreenTopBar from '../components/ScreenTopBar';
 import { createGoal, deleteGoal, getGoals, updateGoal } from '../services/goalsService';
+import { useAppearance } from '../theme/AppearanceContext';
 import { colors } from '../theme/colors';
-import { formatCurrency } from '../utils/formatters';
+import { clampPercent, formatCurrency } from '../utils/formatters';
 
 function getGoalProgress(goal) {
   if (!goal || !goal.target) {
     return 0;
   }
 
-  return Math.min(Math.round((goal.saved / goal.target) * 100), 100);
+  return clampPercent((goal.saved / goal.target) * 100);
 }
 
 function getGoalMessage(goal) {
@@ -63,6 +64,8 @@ function getGoalMessage(goal) {
 }
 
 export default function Savings({ navigation }) {
+  const { appearance } = useAppearance();
+  const isDark = appearance.darkMode;
   const [goals, setGoals] = useState([]);
   const [loadingGoals, setLoadingGoals] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
@@ -96,12 +99,20 @@ export default function Savings({ navigation }) {
   };
 
   const addGoal = async () => {
+    const parsedSaved = Number(saved.replace(',', '.') || 0);
+    const parsedTarget = Number(target.replace(',', '.'));
+
+    if (!title.trim() || Number.isNaN(parsedSaved) || Number.isNaN(parsedTarget) || parsedTarget <= 0 || parsedSaved < 0) {
+      Alert.alert('Dados inválidos', 'Informe título, valor guardado válido e uma meta maior que zero.');
+      return;
+    }
+
     try {
       setSaving(true);
       const goal = await createGoal({
-        title,
-        saved: Number(saved.replace(',', '.') || 0),
-        target: Number(target.replace(',', '.')),
+        title: title.trim(),
+        saved: parsedSaved,
+        target: parsedTarget,
         color: colors.mint
       });
 
@@ -146,19 +157,19 @@ export default function Savings({ navigation }) {
   };
 
   return (
-    <AppLayout>
-      <ScreenTopBar navigation={navigation} />
+    <AppLayout hasFixedTabs>
+      <ScreenTopBar navigation={navigation} showMenu />
 
       <View style={styles.header}>
-        <Text style={styles.title}>Metas</Text>
-        <Text style={styles.subtitle}>Acompanhe seus objetivos e veja onde o dinheiro está chegando.</Text>
+        <Text style={[styles.title, isDark && styles.darkText]}>Metas</Text>
+        <Text style={[styles.subtitle, isDark && styles.darkMuted]}>Acompanhe seus objetivos e veja onde o dinheiro está chegando.</Text>
       </View>
 
-      <View style={styles.hero}>
+      <View style={[styles.hero, isDark && styles.darkHero]}>
         <Image source={require('../assets/mascotePibble.png')} style={styles.heroMascot} />
         <View style={styles.heroCopy}>
-          <Text style={styles.heroTitle}>{heroMessage.title}</Text>
-          <Text style={styles.heroText}>{heroMessage.text}</Text>
+          <Text style={[styles.heroTitle, isDark && styles.darkText]}>{heroMessage.title}</Text>
+          <Text style={[styles.heroText, isDark && styles.darkMuted]}>{heroMessage.text}</Text>
         </View>
       </View>
 
@@ -173,7 +184,7 @@ export default function Savings({ navigation }) {
               activeOpacity={0.9}
               key={goal.id}
               onLongPress={() => removeGoal(goal)}
-              style={styles.card}
+              style={[styles.card, isDark && styles.darkCard]}
             >
               <View style={styles.cardHeader}>
                 <View style={[styles.iconWrap, { backgroundColor: `${goal.color}66` }]}>
@@ -183,28 +194,28 @@ export default function Savings({ navigation }) {
                     <Target size={26} color={colors.purple} />
                   )}
                 </View>
-                <View style={styles.progressBadge}>
+                <View style={[styles.progressBadge, isDark && styles.darkProgressBadge]}>
                   <Text style={styles.progressBadgeText}>{progress}%</Text>
                 </View>
               </View>
-              <Text style={styles.cardTitle}>{goal.title}</Text>
-              <Text style={styles.cardText}>
+              <Text style={[styles.cardTitle, isDark && styles.darkText]}>{goal.title}</Text>
+              <Text style={[styles.cardText, isDark && styles.darkMuted]}>
                 {formatCurrency(goal.saved)} de {formatCurrency(goal.target)} guardados
               </Text>
-              <View style={styles.progressTrack}>
+              <View style={[styles.progressTrack, isDark && styles.darkProgressTrack]}>
                 <View style={[styles.progressFill, { width: `${progress}%` }]} />
               </View>
               <TouchableOpacity
                 activeOpacity={0.78}
                 onPress={() => addToGoal(goal)}
-                style={styles.saveButton}
+                style={[styles.saveButton, isDark && styles.darkSaveButton]}
               >
                 <Text style={styles.saveButtonText}>Guardar +R$100</Text>
               </TouchableOpacity>
             </TouchableOpacity>
           );
         }) : (
-          <Text style={styles.emptyText}>Nenhuma meta criada ainda.</Text>
+          <Text style={[styles.emptyText, isDark && styles.darkMuted]}>Nenhuma meta criada ainda.</Text>
         )}
       </View>
 
@@ -216,9 +227,9 @@ export default function Savings({ navigation }) {
       />
 
       <Modal animationType="slide" transparent visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Nova meta</Text>
+        <View style={[styles.modalBackdrop, isDark && styles.darkModalBackdrop]}>
+          <View style={[styles.modalCard, isDark && styles.darkModalCard]}>
+            <Text style={[styles.modalTitle, isDark && styles.darkText]}>Nova meta</Text>
             <View style={styles.modalForm}>
               <Input label="Título" onChangeText={setTitle} placeholder="Nome da meta" value={title} />
               <Input
@@ -247,7 +258,7 @@ export default function Savings({ navigation }) {
               onPress={() => setModalVisible(false)}
               style={styles.cancelButton}
             >
-              <Text style={styles.cancelText}>Cancelar</Text>
+              <Text style={[styles.cancelText, isDark && styles.darkMuted]}>Cancelar</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -266,11 +277,17 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: '900'
   },
+  darkText: {
+    color: colors.dark.text
+  },
   subtitle: {
     color: colors.muted,
     fontSize: 15,
     fontWeight: '600',
     lineHeight: 22
+  },
+  darkMuted: {
+    color: colors.dark.muted
   },
   hero: {
     alignItems: 'center',
@@ -280,6 +297,11 @@ const styles = StyleSheet.create({
     gap: 14,
     marginBottom: 18,
     padding: 16
+  },
+  darkHero: {
+    backgroundColor: colors.dark.surface,
+    borderColor: colors.dark.border,
+    borderWidth: 1
   },
   heroMascot: {
     height: 84,
@@ -310,6 +332,11 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 20
   },
+  darkCard: {
+    backgroundColor: colors.dark.surface,
+    borderColor: colors.dark.border,
+    borderWidth: 1
+  },
   cardHeader: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -327,6 +354,11 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 7
+  },
+  darkProgressBadge: {
+    backgroundColor: colors.dark.tipCard,
+    borderColor: colors.dark.border,
+    borderWidth: 1
   },
   progressBadgeText: {
     color: colors.purple,
@@ -349,6 +381,9 @@ const styles = StyleSheet.create({
     height: 10,
     overflow: 'hidden'
   },
+  darkProgressTrack: {
+    backgroundColor: 'rgba(205,189,255,.14)'
+  },
   progressFill: {
     backgroundColor: colors.mint,
     borderRadius: 999,
@@ -360,6 +395,11 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 8
+  },
+  darkSaveButton: {
+    backgroundColor: colors.dark.tipCard,
+    borderColor: colors.dark.border,
+    borderWidth: 1
   },
   saveButtonText: {
     color: colors.purple,
@@ -383,11 +423,19 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end'
   },
+  darkModalBackdrop: {
+    backgroundColor: 'rgba(8, 6, 18, 0.70)'
+  },
   modalCard: {
     backgroundColor: colors.background,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     padding: 22
+  },
+  darkModalCard: {
+    backgroundColor: colors.dark.background,
+    borderColor: colors.dark.border,
+    borderWidth: 1
   },
   modalTitle: {
     color: colors.text,

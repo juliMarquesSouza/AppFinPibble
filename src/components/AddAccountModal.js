@@ -1,25 +1,20 @@
 import { useState } from 'react';
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Landmark, Palette, PiggyBank, Wallet, WalletCards } from 'lucide-react-native';
+import { Alert, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Landmark, Palette } from 'lucide-react-native';
 
+import { useAppearance } from '../theme/AppearanceContext';
 import { colors } from '../theme/colors';
 import Input from './Input';
 import PrimaryButton from './PrimaryButton';
 
-const accountTypes = [
-  { label: 'Banco', value: 'bank', icon: Landmark },
-  { label: 'Carteira', value: 'wallet', icon: Wallet },
-  { label: 'Investimentos', value: 'investment', icon: PiggyBank },
-  { label: 'Crédito', value: 'credit', icon: WalletCards }
-];
-
 const accountColors = ['#7C3AED', '#35B979', '#2563EB', '#EF6F7A', '#F59E0B'];
 
 export default function AddAccountModal({ loading, onClose, onSubmit, visible }) {
+  const { appearance } = useAppearance();
+  const isDark = appearance.darkMode;
   const [balance, setBalance] = useState('');
   const [color, setColor] = useState(accountColors[0]);
   const [name, setName] = useState('');
-  const [type, setType] = useState(accountTypes[0].value);
 
   const canSubmit = name.trim() && balance.trim();
 
@@ -27,34 +22,32 @@ export default function AddAccountModal({ loading, onClose, onSubmit, visible })
     const parsedBalance = Number(balance.replace(',', '.'));
 
     if (!canSubmit || Number.isNaN(parsedBalance)) {
+      Alert.alert('Dados incompletos', 'Informe o nome do banco e um saldo inicial válido.');
       return;
     }
 
-    const selectedType = accountTypes.find((item) => item.value === type) || accountTypes[0];
-
     await onSubmit({
       name: name.trim(),
-      type,
+      type: 'bank',
       balance: parsedBalance,
       color,
-      icon: selectedType.value === 'bank' ? 'bank' : selectedType.value
+      icon: 'bank'
     });
 
     setBalance('');
     setColor(accountColors[0]);
     setName('');
-    setType(accountTypes[0].value);
   };
 
   return (
     <Modal animationType="slide" transparent visible={visible} onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <View style={styles.sheet}>
-          <View style={styles.handle} />
+      <View style={[styles.backdrop, isDark && styles.darkBackdrop]}>
+        <View style={[styles.sheet, isDark && styles.darkSheet]}>
+          <View style={[styles.handle, isDark && styles.darkHandle]} />
           <View style={styles.header}>
             <View>
-              <Text style={styles.title}>Nova conta</Text>
-              <Text style={styles.subtitle}>Conecte uma conta à API local.</Text>
+              <Text style={[styles.title, isDark && styles.darkText]}>Nova conta</Text>
+              <Text style={[styles.subtitle, isDark && styles.darkMuted]}>Adicione um banco à sua visão financeira.</Text>
             </View>
             <TouchableOpacity activeOpacity={0.72} onPress={onClose} style={styles.closeButton}>
               <Text style={styles.closeText}>Fechar</Text>
@@ -72,31 +65,13 @@ export default function AddAccountModal({ loading, onClose, onSubmit, visible })
             />
           </View>
 
-          <View style={styles.pickSection}>
-            <Text style={styles.pickLabel}>Tipo</Text>
-            <View style={styles.chips}>
-              {accountTypes.map((item) => {
-                const Icon = item.icon;
-
-                return (
-                  <TouchableOpacity
-                    activeOpacity={0.82}
-                    key={item.value}
-                    onPress={() => setType(item.value)}
-                    style={[styles.chip, type === item.value && styles.chipActive]}
-                  >
-                    <Icon size={16} color={type === item.value ? colors.purple : colors.muted} />
-                    <Text style={[styles.chipText, type === item.value && styles.chipTextActive]}>
-                      {item.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+          <View style={[styles.bankTypeHint, isDark && styles.darkHint]}>
+            <Landmark size={18} color={colors.purple} />
+            <Text style={[styles.colorHintText, isDark && styles.darkMuted]}>Tipo de conta: Banco</Text>
           </View>
 
           <View style={styles.pickSection}>
-            <Text style={styles.pickLabel}>Cor</Text>
+            <Text style={[styles.pickLabel, isDark && styles.darkText]}>Cor</Text>
             <View style={styles.swatches}>
               {accountColors.map((item) => (
                 <TouchableOpacity
@@ -106,7 +81,8 @@ export default function AddAccountModal({ loading, onClose, onSubmit, visible })
                   style={[
                     styles.swatchButton,
                     color === item && styles.swatchButtonActive,
-                    { borderColor: item }
+                    { borderColor: item },
+                    isDark && styles.darkSwatchButton
                   ]}
                 >
                   <View style={[styles.swatch, { backgroundColor: item }]} />
@@ -115,9 +91,9 @@ export default function AddAccountModal({ loading, onClose, onSubmit, visible })
             </View>
           </View>
 
-          <View style={styles.colorHint}>
+          <View style={[styles.colorHint, isDark && styles.darkHint]}>
             <Palette size={18} color={colors.purple} />
-            <Text style={styles.colorHintText}>A cor escolhida aparece no cartão da conta.</Text>
+            <Text style={[styles.colorHintText, isDark && styles.darkMuted]}>A cor escolhida aparece no cartão da conta.</Text>
           </View>
 
           <PrimaryButton
@@ -138,12 +114,20 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end'
   },
+  darkBackdrop: {
+    backgroundColor: 'rgba(8, 6, 18, 0.70)'
+  },
   sheet: {
     backgroundColor: colors.background,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     maxHeight: '92%',
     padding: 22
+  },
+  darkSheet: {
+    backgroundColor: colors.dark.background,
+    borderColor: colors.dark.border,
+    borderWidth: 1
   },
   handle: {
     alignSelf: 'center',
@@ -152,6 +136,9 @@ const styles = StyleSheet.create({
     height: 5,
     marginBottom: 18,
     width: 54
+  },
+  darkHandle: {
+    backgroundColor: colors.dark.border
   },
   header: {
     alignItems: 'flex-start',
@@ -170,6 +157,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 4
   },
+  darkText: {
+    color: colors.dark.text
+  },
+  darkMuted: {
+    color: colors.dark.muted
+  },
   closeButton: {
     paddingLeft: 12,
     paddingVertical: 4
@@ -182,6 +175,15 @@ const styles = StyleSheet.create({
   form: {
     gap: 14
   },
+  bankTypeHint: {
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 16,
+    padding: 14
+  },
   pickSection: {
     marginTop: 16
   },
@@ -190,34 +192,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '900',
     marginBottom: 10
-  },
-  chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8
-  },
-  chip: {
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderColor: colors.border,
-    borderRadius: 999,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: 6,
-    paddingHorizontal: 13,
-    paddingVertical: 10
-  },
-  chipActive: {
-    backgroundColor: colors.softPurple,
-    borderColor: colors.purple
-  },
-  chipText: {
-    color: colors.muted,
-    fontSize: 13,
-    fontWeight: '800'
-  },
-  chipTextActive: {
-    color: colors.purple
   },
   swatches: {
     flexDirection: 'row',
@@ -232,6 +206,9 @@ const styles = StyleSheet.create({
     height: 42,
     justifyContent: 'center',
     width: 42
+  },
+  darkSwatchButton: {
+    backgroundColor: colors.dark.surface
   },
   swatchButtonActive: {
     borderWidth: 3
@@ -250,6 +227,11 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     marginTop: 18,
     padding: 14
+  },
+  darkHint: {
+    backgroundColor: colors.dark.surface,
+    borderColor: colors.dark.border,
+    borderWidth: 1
   },
   colorHintText: {
     color: colors.muted,

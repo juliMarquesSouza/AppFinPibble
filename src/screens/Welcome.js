@@ -5,9 +5,13 @@ import AppLayout from '../components/AppLayout';
 import FadeInView from '../components/FadeInView';
 import PremiumBackground from '../components/PremiumBackground';
 import PrimaryButton from '../components/PrimaryButton';
+import { useAppearance } from '../theme/AppearanceContext';
 import { colors } from '../theme/colors';
 
 export default function Welcome({ navigation }) {
+  const { appearance } = useAppearance();
+  const isDark = appearance.darkMode;
+
   return (
     <AppLayout scroll={false} contentStyle={styles.container}>
       <PremiumBackground />
@@ -17,13 +21,13 @@ export default function Welcome({ navigation }) {
 
         <View style={styles.copy}>
           <FadeInView delay={560}>
-            <Text style={styles.eyebrow}>Bem-vindo ao</Text>
+            <Text style={[styles.eyebrow, isDark && styles.darkText]}>Bem-vindo ao</Text>
           </FadeInView>
           <FadeInView delay={720}>
             <Text style={styles.title}>FinPibble</Text>
           </FadeInView>
           <FadeInView delay={920}>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.subtitle, isDark && styles.darkMuted]}>
               Organize suas finanças{'\n'}e construa seu patrimônio.
             </Text>
           </FadeInView>
@@ -65,6 +69,9 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     textAlign: 'center'
   },
+  darkText: {
+    color: colors.dark.text
+  },
   title: {
     color: colors.purple,
     fontSize: 48,
@@ -81,6 +88,9 @@ const styles = StyleSheet.create({
     lineHeight: 27,
     marginTop: 12,
     textAlign: 'center'
+  },
+  darkMuted: {
+    color: colors.dark.muted
   },
   action: {
     width: '100%'

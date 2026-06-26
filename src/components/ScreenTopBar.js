@@ -1,14 +1,22 @@
+import { useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ChevronLeft } from 'lucide-react-native';
 
+import { useAppearance } from '../theme/AppearanceContext';
 import { colors } from '../theme/colors';
+import UserMenu from './UserMenu';
 
 export default function ScreenTopBar({
   backLabel = 'Voltar',
   fallbackRoute = 'Dashboard',
   navigation,
-  showBack = true
+  showBack = true,
+  showMenu = false
 }) {
+  const { appearance } = useAppearance();
+  const isDark = appearance.darkMode;
+  const [menuVisible, setMenuVisible] = useState(false);
+
   const goBack = () => {
     if (navigation.canGoBack()) {
       navigation.goBack();
@@ -24,14 +32,23 @@ export default function ScreenTopBar({
     <View style={styles.bar}>
       {showBack ? (
         <TouchableOpacity activeOpacity={0.78} onPress={goBack} style={styles.action}>
-          <ChevronLeft size={20} color={colors.text} />
-          <Text style={styles.actionText}>{backLabel}</Text>
+          <ChevronLeft size={20} color={isDark ? colors.dark.text : colors.text} />
+          <Text style={[styles.actionText, isDark && styles.darkActionText]}>{backLabel}</Text>
         </TouchableOpacity>
       ) : (
         <View style={styles.placeholder} />
       )}
 
-      <View style={styles.placeholder} />
+      {showMenu ? (
+        <UserMenu
+          navigation={navigation}
+          onClose={() => setMenuVisible(false)}
+          onOpen={() => setMenuVisible(true)}
+          visible={menuVisible}
+        />
+      ) : (
+        <View style={styles.placeholder} />
+      )}
     </View>
   );
 }
@@ -55,6 +72,9 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 14,
     fontWeight: '900'
+  },
+  darkActionText: {
+    color: colors.dark.text
   },
   placeholder: {
     width: 1

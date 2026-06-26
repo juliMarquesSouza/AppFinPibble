@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
-import { Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { CalendarDays, Coins, Tag } from 'lucide-react-native';
 
+import { useAppearance } from '../theme/AppearanceContext';
 import { colors } from '../theme/colors';
+import { brazilDateToIso, isoToBrazilDate, todayInputValue } from '../utils/formatters';
 import Input from './Input';
 import PrimaryButton from './PrimaryButton';
 
@@ -16,32 +18,6 @@ const categories = [
   'Investimentos'
 ];
 
-function todayInputValue() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function isoToBrazilDate(value) {
-  if (!value) {
-    return '';
-  }
-
-  const [year, month, day] = value.slice(0, 10).split('-');
-  return day && month && year ? `${day}/${month}/${year}` : value;
-}
-
-function brazilDateToIso(value) {
-  if (!value) {
-    return todayInputValue();
-  }
-
-  if (value.includes('-')) {
-    return value.slice(0, 10);
-  }
-
-  const [day, month, year] = value.split('/');
-  return day && month && year ? `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}` : value;
-}
-
 export default function AddTransactionModal({
   accounts = [],
   editingTransaction,
@@ -50,13 +26,16 @@ export default function AddTransactionModal({
   onClose,
   visible
 }) {
+  const { appearance } = useAppearance();
+  const isDark = appearance.darkMode;
+  const dateInputRef = useRef(null);
   const [accountId, setAccountId] = useState(accounts[0]?.id);
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState(categories[0]);
   const [date, setDate] = useState(isoToBrazilDate(todayInputValue()));
   const [title, setTitle] = useState('');
   const [type, setType] = useState('income');
-  const canSubmit = title && amount && accountId;
+  const canSubmit = title.trim() && amount.trim() && accountId;
 
   useEffect(() => {
     if (accounts.length && !accounts.some((account) => account.id === accountId)) {
@@ -89,18 +68,25 @@ export default function AddTransactionModal({
 
   const submit = async () => {
     const parsedAmount = Number(amount.replace(',', '.'));
+    const isoDate = brazilDateToIso(date);
 
-    if (!canSubmit || Number.isNaN(parsedAmount)) {
+    if (!canSubmit || Number.isNaN(parsedAmount) || parsedAmount <= 0) {
+      Alert.alert('Dados incompletos', 'Informe descrição, valor maior que zero e conta.');
+      return;
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) {
+      Alert.alert('Data inválida', 'Informe a data no formato dia/mês/ano.');
       return;
     }
 
     await onAdd({
-      description: title,
-      title,
+      description: title.trim(),
+      title: title.trim(),
       category,
       accountId,
       amount: Math.abs(parsedAmount),
-      date: brazilDateToIso(date),
+      date: isoDate,
       type
     });
 
@@ -114,29 +100,29 @@ export default function AddTransactionModal({
 
   return (
     <Modal animationType="slide" transparent visible={visible} onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <View style={styles.sheet}>
+      <View style={[styles.backdrop, isDark && styles.darkBackdrop]}>
+        <View style={[styles.sheet, isDark && styles.darkSheet]}>
           <ScrollView
             contentContainerStyle={styles.sheetContent}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <View style={styles.handle} />
+            <View style={[styles.handle, isDark && styles.darkHandle]} />
             <View style={styles.header}>
               <View>
-                <Text style={styles.title}>{editingTransaction ? 'Editar transação' : 'Nova transação'}</Text>
-                <Text style={styles.subtitle}>Adicione ou ajuste um lançamento do seu resumo.</Text>
+                <Text style={[styles.title, isDark && styles.darkText]}>{editingTransaction ? 'Editar transação' : 'Nova transação'}</Text>
+                <Text style={[styles.subtitle, isDark && styles.darkMuted]}>Adicione ou ajuste um lançamento do seu resumo.</Text>
               </View>
               <TouchableOpacity activeOpacity={0.72} onPress={onClose} style={styles.closeButton}>
                 <Text style={styles.closeText}>Fechar</Text>
               </TouchableOpacity>
             </View>
 
-            <View style={styles.segmented}>
+            <View style={[styles.segmented, isDark && styles.darkSegmented]}>
               <TouchableOpacity
                 activeOpacity={0.82}
                 onPress={() => setType('income')}
-                style={[styles.segment, styles.incomeSegment, type === 'income' && styles.incomeSegmentActive]}
+                style={[styles.segment, styles.incomeSegment, isDark && styles.darkIncomeSegment, type === 'income' && styles.incomeSegmentActive]}
               >
                 <Text style={[styles.segmentText, styles.incomeSegmentText, type === 'income' && styles.segmentTextActive]}>
                   Receita
@@ -145,7 +131,7 @@ export default function AddTransactionModal({
               <TouchableOpacity
                 activeOpacity={0.82}
                 onPress={() => setType('expense')}
-                style={[styles.segment, styles.expenseSegment, type === 'expense' && styles.expenseSegmentActive]}
+                style={[styles.segment, styles.expenseSegment, isDark && styles.darkExpenseSegment, type === 'expense' && styles.expenseSegmentActive]}
               >
                 <Text style={[styles.segmentText, styles.expenseSegmentText, type === 'expense' && styles.segmentTextActive]}>
                   Despesa
@@ -170,15 +156,27 @@ export default function AddTransactionModal({
                 value={amount}
               />
               <View style={styles.dateWrapper}>
-                <Text style={styles.dateLabel}>Data</Text>
-                <View style={styles.dateField}>
-                  <CalendarDays size={20} color={colors.muted} />
+                <Text style={[styles.dateLabel, isDark && styles.darkText]}>Data</Text>
+                <View style={[styles.dateField, isDark && styles.darkField]}>
+                  <TouchableOpacity
+                    activeOpacity={0.72}
+                    accessibilityRole="button"
+                    accessibilityLabel="Escolher data"
+                    onPress={() => {
+                      dateInputRef.current?.focus?.();
+                      dateInputRef.current?.showPicker?.();
+                    }}
+                    style={styles.dateIconButton}
+                  >
+                    <CalendarDays size={20} color={isDark ? colors.dark.muted : colors.muted} />
+                  </TouchableOpacity>
                   <TextInput
+                    ref={dateInputRef}
                     keyboardType="numeric"
                     onChangeText={(value) => setDate(Platform.OS === 'web' ? isoToBrazilDate(value) : value)}
                     placeholder="11/12/2005"
-                    placeholderTextColor={colors.muted}
-                    style={styles.dateInput}
+                    placeholderTextColor={isDark ? colors.dark.muted : colors.muted}
+                    style={[styles.dateInput, isDark && styles.darkInput]}
                     type={Platform.OS === 'web' ? 'date' : undefined}
                     value={Platform.OS === 'web' ? brazilDateToIso(date) : date}
                   />
@@ -187,16 +185,16 @@ export default function AddTransactionModal({
             </View>
 
             <View style={styles.pickSection}>
-              <Text style={styles.pickLabel}>Categoria</Text>
+              <Text style={[styles.pickLabel, isDark && styles.darkText]}>Categoria</Text>
               <View style={styles.chips}>
                 {categories.map((item) => (
                   <TouchableOpacity
                     activeOpacity={0.82}
                     key={item}
                     onPress={() => setCategory(item)}
-                    style={[styles.chip, category === item && styles.chipActive]}
+                    style={[styles.chip, isDark && styles.darkChip, category === item && styles.chipActive, isDark && category === item && styles.darkChipActive]}
                   >
-                    <Text style={[styles.chipText, category === item && styles.chipTextActive]}>
+                    <Text style={[styles.chipText, isDark && styles.darkMuted, category === item && styles.chipTextActive]}>
                       {item}
                     </Text>
                   </TouchableOpacity>
@@ -205,7 +203,7 @@ export default function AddTransactionModal({
             </View>
 
             <View style={styles.pickSection}>
-              <Text style={styles.pickLabel}>
+              <Text style={[styles.pickLabel, isDark && styles.darkText]}>
                 {type === 'income' ? 'Conta de destino' : 'Conta de origem'}
               </Text>
               <View style={styles.chips}>
@@ -214,22 +212,22 @@ export default function AddTransactionModal({
                     activeOpacity={0.82}
                     key={item.id}
                     onPress={() => setAccountId(item.id)}
-                    style={[styles.chip, accountId === item.id && styles.chipActive]}
+                    style={[styles.chip, isDark && styles.darkChip, accountId === item.id && styles.chipActive, isDark && accountId === item.id && styles.darkChipActive]}
                   >
-                    <Text style={[styles.chipText, accountId === item.id && styles.chipTextActive]}>
+                    <Text style={[styles.chipText, isDark && styles.darkMuted, accountId === item.id && styles.chipTextActive]}>
                       {item.name}
                     </Text>
                   </TouchableOpacity>
                 ))}
               </View>
               {!accounts.length ? (
-                <Text style={styles.emptyText}>Crie uma conta antes de adicionar transações.</Text>
+                <Text style={[styles.emptyText, isDark && styles.darkMuted]}>Crie uma conta antes de adicionar transações.</Text>
               ) : null}
             </View>
 
-            <View style={styles.dateHint}>
+            <View style={[styles.dateHint, isDark && styles.darkHint]}>
               <CalendarDays size={18} color={colors.purple} />
-              <Text style={styles.dateHintText}>O saldo da conta será atualizado ao salvar.</Text>
+              <Text style={[styles.dateHintText, isDark && styles.darkMuted]}>O saldo da conta será atualizado ao salvar.</Text>
             </View>
 
             <PrimaryButton
@@ -251,11 +249,19 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end'
   },
+  darkBackdrop: {
+    backgroundColor: 'rgba(8, 6, 18, 0.70)'
+  },
   sheet: {
     backgroundColor: colors.background,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     maxHeight: '92%'
+  },
+  darkSheet: {
+    backgroundColor: colors.dark.background,
+    borderColor: colors.dark.border,
+    borderWidth: 1
   },
   sheetContent: {
     padding: 22
@@ -267,6 +273,9 @@ const styles = StyleSheet.create({
     height: 5,
     marginBottom: 18,
     width: 54
+  },
+  darkHandle: {
+    backgroundColor: colors.dark.border
   },
   header: {
     alignItems: 'flex-start',
@@ -285,6 +294,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 4
   },
+  darkText: {
+    color: colors.dark.text
+  },
+  darkMuted: {
+    color: colors.dark.muted
+  },
   closeButton: {
     paddingLeft: 12,
     paddingVertical: 4
@@ -302,6 +317,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     padding: 6
   },
+  darkSegmented: {
+    backgroundColor: colors.dark.surface
+  },
   segment: {
     alignItems: 'center',
     borderRadius: 14,
@@ -315,11 +333,17 @@ const styles = StyleSheet.create({
   incomeSegment: {
     backgroundColor: '#E8F8EF'
   },
+  darkIncomeSegment: {
+    backgroundColor: colors.dark.incomeCard
+  },
   incomeSegmentActive: {
     backgroundColor: '#CFF3DE'
   },
   expenseSegment: {
     backgroundColor: '#FDECEF'
+  },
+  darkExpenseSegment: {
+    backgroundColor: colors.dark.expenseCard
   },
   expenseSegmentActive: {
     backgroundColor: '#FAD2DA'
@@ -360,6 +384,16 @@ const styles = StyleSheet.create({
     minHeight: 58,
     paddingHorizontal: 18
   },
+  darkField: {
+    backgroundColor: colors.dark.surface,
+    borderColor: colors.dark.border
+  },
+  dateIconButton: {
+    alignItems: 'center',
+    height: 34,
+    justifyContent: 'center',
+    width: 34
+  },
   dateInput: {
     backgroundColor: 'transparent',
     borderWidth: 0,
@@ -368,6 +402,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     outlineStyle: 'none'
+  },
+  darkInput: {
+    color: colors.dark.text
   },
   pickSection: {
     marginTop: 16
@@ -391,9 +428,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10
   },
+  darkChip: {
+    backgroundColor: colors.dark.surface,
+    borderColor: colors.dark.border
+  },
   chipActive: {
     backgroundColor: colors.softPurple,
     borderColor: colors.purple
+  },
+  darkChipActive: {
+    backgroundColor: colors.dark.tipCard,
+    borderColor: colors.dark.purpleGlow
   },
   chipText: {
     color: colors.muted,
@@ -418,6 +463,11 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     marginTop: 18,
     padding: 14
+  },
+  darkHint: {
+    backgroundColor: colors.dark.surface,
+    borderColor: colors.dark.border,
+    borderWidth: 1
   },
   dateHintText: {
     color: colors.muted,

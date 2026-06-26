@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -19,15 +19,17 @@ const Tab = createBottomTabNavigator();
 
 function MainTabs() {
   return (
-    <Tab.Navigator
-      initialRouteName="Dashboard"
-      screenOptions={{ headerShown: false }}
-      tabBar={(props) => <BottomTabs {...props} />}
-    >
-      <Tab.Screen name="Dashboard" component={Dashboard} />
-      <Tab.Screen name="Accounts" component={Accounts} />
-      <Tab.Screen name="Savings" component={Savings} />
-    </Tab.Navigator>
+    <View style={styles.tabsRoot}>
+      <Tab.Navigator
+        initialRouteName="Dashboard"
+        screenOptions={{ headerShown: false }}
+        tabBar={(props) => <BottomTabs {...props} />}
+      >
+        <Tab.Screen name="Dashboard" component={Dashboard} />
+        <Tab.Screen name="Accounts" component={Accounts} />
+        <Tab.Screen name="Savings" component={Savings} />
+      </Tab.Navigator>
+    </View>
   );
 }
 
@@ -57,7 +59,14 @@ export default function AppNavigator() {
         initialRouteName={initialRouteName}
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: '#F8F7FC' }
+          contentStyle: {
+            backgroundColor: '#F8F7FC',
+            ...(Platform.OS === 'web' ? {
+              height: '100vh',
+              maxHeight: '100vh',
+              overflow: 'hidden'
+            } : {})
+          }
         }}
       >
         <Stack.Screen name="Login" component={Login} />
@@ -68,3 +77,14 @@ export default function AppNavigator() {
     </NavigationContainer>
   );
 }
+
+const styles = StyleSheet.create({
+  tabsRoot: {
+    flex: 1,
+    ...(Platform.OS === 'web' ? {
+      height: '100%',
+      maxHeight: '100%',
+      overflow: 'hidden'
+    } : {})
+  }
+});

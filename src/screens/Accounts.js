@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
-import { Landmark, PiggyBank, Plus, Wallet, WalletCards } from 'lucide-react-native';
+import { Landmark, Plus } from 'lucide-react-native';
 
 import AddAccountModal from '../components/AddAccountModal';
 import AccountCard from '../components/AccountCard';
@@ -8,24 +8,16 @@ import AppLayout from '../components/AppLayout';
 import PrimaryButton from '../components/PrimaryButton';
 import ScreenTopBar from '../components/ScreenTopBar';
 import { createAccount, deleteAccount, getAccounts } from '../services/accountsApi';
+import { useAppearance } from '../theme/AppearanceContext';
 import { colors } from '../theme/colors';
 
 const iconByType = {
   'Conta bancária': Landmark,
-  bank: Landmark,
-  Carteira: Wallet,
-  wallet: Wallet,
-  Investimentos: PiggyBank,
-  investment: PiggyBank,
-  'Cartão de crédito': WalletCards,
-  credit: WalletCards
+  bank: Landmark
 };
 
 const readableType = {
-  bank: 'Conta bancária',
-  wallet: 'Carteira',
-  investment: 'Investimentos',
-  credit: 'Cartão de crédito'
+  bank: 'Conta bancária'
 };
 
 function normalizeAccount(account) {
@@ -35,7 +27,7 @@ function normalizeAccount(account) {
   return {
     ...accountData,
     id: accountData.id || `local-${Date.now()}`,
-    institution: accountData.institution || 'API local',
+    institution: accountData.institution || '',
     type,
     balance: Number(accountData.balance) || 0,
     color: accountData.color || colors.purple
@@ -51,11 +43,13 @@ function isBankAccount(account) {
 }
 
 export default function Accounts({ navigation }) {
+  const { appearance } = useAppearance();
+  const isDark = appearance.darkMode;
   const [accountList, setAccountList] = useState([]);
   const [isCreating, setIsCreating] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('Sincronizando com a API local...');
+  const [statusMessage, setStatusMessage] = useState('Sincronizando suas contas...');
 
   useEffect(() => {
     let isMounted = true;
@@ -71,7 +65,7 @@ export default function Accounts({ navigation }) {
         const bankAccounts = normalizeAccounts(apiAccounts).filter(isBankAccount);
 
         setAccountList(bankAccounts);
-        setStatusMessage(bankAccounts.length ? 'Bancos carregados da API local.' : 'Nenhum banco adicionado ainda.');
+        setStatusMessage(bankAccounts.length ? 'Bancos carregados.' : 'Nenhum banco adicionado ainda.');
       } catch {
         if (isMounted) {
           setAccountList([]);
@@ -101,10 +95,10 @@ export default function Accounts({ navigation }) {
         setAccountList((currentAccounts) => [...currentAccounts, normalizedAccount]);
       }
 
-      setStatusMessage('Banco criado e salvo na API local.');
+      setStatusMessage('Banco criado com sucesso.');
       setIsModalVisible(false);
     } catch {
-      Alert.alert('Não foi possível criar a conta', 'Confira se a API local está rodando em http://localhost:3333.');
+      Alert.alert('Não foi possível criar a conta', 'Confira a conexão e tente novamente.');
     } finally {
       setIsCreating(false);
     }
@@ -125,7 +119,7 @@ export default function Accounts({ navigation }) {
               setAccountList((currentAccounts) =>
                 currentAccounts.filter((item) => item.id !== account.id)
               );
-              setStatusMessage('Conta removida da API local.');
+              setStatusMessage('Conta removida.');
             } catch (error) {
               Alert.alert('Não foi possível remover', error.message);
             }
@@ -136,12 +130,12 @@ export default function Accounts({ navigation }) {
   };
 
   return (
-    <AppLayout>
-      <ScreenTopBar navigation={navigation} />
+    <AppLayout hasFixedTabs>
+      <ScreenTopBar navigation={navigation} showMenu />
 
       <View style={styles.header}>
-        <Text style={styles.title}>Contas</Text>
-        <Text style={styles.subtitle}>Bancos adicionados à sua visão financeira.</Text>
+        <Text style={[styles.title, isDark && styles.darkText]}>Contas</Text>
+        <Text style={[styles.subtitle, isDark && styles.darkMuted]}>Bancos adicionados à sua visão financeira.</Text>
         <Text style={styles.status}>{isLoading ? 'Carregando contas...' : statusMessage}</Text>
       </View>
 
@@ -159,7 +153,7 @@ export default function Accounts({ navigation }) {
             />
           ))
         ) : (
-          <Text style={styles.emptyText}>Nenhum banco adicionado ainda.</Text>
+          <Text style={[styles.emptyText, isDark && styles.darkMuted]}>Nenhum banco adicionado ainda.</Text>
         )}
       </View>
 
@@ -190,11 +184,17 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: '900'
   },
+  darkText: {
+    color: colors.dark.text
+  },
   subtitle: {
     color: colors.muted,
     fontSize: 15,
     fontWeight: '600',
     lineHeight: 22
+  },
+  darkMuted: {
+    color: colors.dark.muted
   },
   status: {
     color: colors.purple,

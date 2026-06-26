@@ -15,7 +15,7 @@ import { getDashboardSummary } from '../services/dashboardService';
 import { createTransaction, deleteTransaction, updateTransaction } from '../services/transactionsService';
 import { useAppearance } from '../theme/AppearanceContext';
 import { colors } from '../theme/colors';
-import { formatCurrency } from '../utils/formatters';
+import { clampPercent, formatCurrency, formatTransactionDate } from '../utils/formatters';
 
 const emptySummary = {
   totalBalance: 0,
@@ -42,7 +42,7 @@ function getPibbleTip({ accounts, expenses, income, mainGoal, transactionCount }
   }
 
   if (mainGoal) {
-    const progress = mainGoal.target ? Math.min(Math.round((mainGoal.saved / mainGoal.target) * 100), 100) : 0;
+    const progress = clampPercent(mainGoal.target ? (mainGoal.saved / mainGoal.target) * 100 : 0);
 
     if (progress >= 75 && progress < 100) {
       return `Sua meta ${mainGoal.title} está com ${progress}%. Um aporte final pode acelerar a conclusão.`;
@@ -78,7 +78,7 @@ export default function Dashboard({ navigation }) {
   const [userName, setUserName] = useState('');
   const noticeProgress = useRef(new Animated.Value(0)).current;
   const mainGoal = dashboardSummary?.mainGoal || dashboardSummary?.goals?.[0] || null;
-  const goalProgress = mainGoal ? Math.round((mainGoal.saved / mainGoal.target) * 100) : 0;
+  const goalProgress = mainGoal ? clampPercent(mainGoal.target ? (mainGoal.saved / mainGoal.target) * 100 : 0) : 0;
   const dashboardAccounts = dashboardSummary?.accounts || [];
   const currentSummary = dashboardSummary || emptySummary;
 
@@ -122,7 +122,7 @@ export default function Dashboard({ navigation }) {
         amount: transaction.amount,
         rawDate: transaction.date,
         type: transaction.type,
-        date: new Date(transaction.date).toLocaleDateString('pt-BR', {
+        date: formatTransactionDate(transaction.date, {
           day: '2-digit',
           month: '2-digit',
           year: 'numeric'
@@ -234,9 +234,28 @@ export default function Dashboard({ navigation }) {
     inputRange: [0, 1],
     outputRange: [-90, 0]
   });
+  const monthGoalProgress = clampPercent(currentSummary.monthGoal);
 
   return (
     <AppLayout
+      hasFixedTabs
+      fixedHeader={
+        <View style={styles.header}>
+          <View style={styles.greetingBlock}>
+            <View style={styles.greetingRow}>
+              <Image source={require('../assets/saudacaoPibble.png')} style={styles.greetingIcon} />
+              <Text style={[styles.greeting, isDark && styles.darkText]}>Olá{userName ? `, ${userName}` : ''}!</Text>
+            </View>
+            <Text style={[styles.subtitle, isDark && styles.darkMuted]}>Aqui está seu resumo financeiro.</Text>
+          </View>
+          <UserMenu
+            navigation={navigation}
+            onClose={() => setMenuVisible(false)}
+            onOpen={() => setMenuVisible(true)}
+            visible={menuVisible}
+          />
+        </View>
+      }
       overlay={
         noticeVisible ? (
           <Animated.View
@@ -253,22 +272,6 @@ export default function Dashboard({ navigation }) {
         ) : null
       }
     >
-      <View style={styles.header}>
-        <View style={styles.greetingBlock}>
-          <View style={styles.greetingRow}>
-            <Image source={require('../assets/saudacaoPibble.png')} style={styles.greetingIcon} />
-            <Text style={[styles.greeting, isDark && styles.darkText]}>Olá{userName ? `, ${userName}` : ''}!</Text>
-          </View>
-          <Text style={[styles.subtitle, isDark && styles.darkMuted]}>Aqui está seu resumo financeiro.</Text>
-        </View>
-        <UserMenu
-          navigation={navigation}
-          onClose={() => setMenuVisible(false)}
-          onOpen={() => setMenuVisible(true)}
-          visible={menuVisible}
-        />
-      </View>
-
       <LinearGradient
         colors={isDark ? ['#A58BFF', '#6C4DFF', '#2B1B65'] : [colors.purple, colors.purpleDark]}
         start={{ x: 0, y: 0 }}
@@ -277,10 +280,6 @@ export default function Dashboard({ navigation }) {
       >
         <Text style={styles.balanceLabel}>Saldo total</Text>
         <Text style={styles.balanceValue}>{formatCurrency(totals.totalBalance)}</Text>
-        <View style={styles.balanceFooter}>
-          <Text style={styles.balanceFooterText}>+12% vs. mês anterior</Text>
-          <Text style={styles.balanceFooterText}>Junho</Text>
-        </View>
       </LinearGradient>
 
       <View style={styles.statsRow}>
@@ -333,7 +332,7 @@ export default function Dashboard({ navigation }) {
       <View style={[styles.monthCard, isDark && styles.darkMonthCard]}>
         <View>
           <Text style={[styles.sectionTitle, isDark && styles.darkText]}>Resumo do mês</Text>
-          <Text style={[styles.mutedText, isDark && styles.darkMuted]}>Você usou {currentSummary.monthGoal}% do orçamento previsto.</Text>
+          <Text style={[styles.mutedText, isDark && styles.darkMuted]}>Você usou {monthGoalProgress}% do orçamento previsto.</Text>
         </View>
         <View style={[styles.progressTrack, isDark && styles.darkProgressTrack]}>
           {isDark ? (
@@ -341,10 +340,10 @@ export default function Dashboard({ navigation }) {
               colors={['#7C5CFF', '#CDBDFF']}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={[styles.progressFill, { width: `${currentSummary.monthGoal}%` }]}
+              style={[styles.progressFill, { width: `${monthGoalProgress}%` }]}
             />
           ) : (
-            <View style={[styles.progressFill, { width: `${currentSummary.monthGoal}%` }]} />
+            <View style={[styles.progressFill, { width: `${monthGoalProgress}%` }]} />
           )}
         </View>
       </View>
@@ -364,7 +363,7 @@ export default function Dashboard({ navigation }) {
             <TransactionItem key={transaction.id} transaction={transaction} />
           ))
         ) : (
-          <Text style={styles.emptyText}>Nenhuma transação registrada.</Text>
+          <Text style={[styles.emptyText, isDark && styles.darkMuted]}>Nenhuma transação registrada.</Text>
         )}
       </View>
 
@@ -388,17 +387,17 @@ export default function Dashboard({ navigation }) {
       />
 
       <Modal animationType="slide" transparent visible={transactionsVisible} onRequestClose={() => setTransactionsVisible(false)}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.transactionsSheet}>
+        <View style={[styles.modalBackdrop, isDark && styles.darkModalBackdrop]}>
+          <View style={[styles.transactionsSheet, isDark && styles.darkTransactionsSheet]}>
             <View style={styles.sheetHeader}>
-              <Text style={styles.sheetTitle}>Transações</Text>
+              <Text style={[styles.sheetTitle, isDark && styles.darkText]}>Transações</Text>
               <TouchableOpacity activeOpacity={0.72} onPress={() => setTransactionsVisible(false)}>
                 <Text style={styles.link}>Fechar</Text>
               </TouchableOpacity>
             </View>
             <ScrollView showsVerticalScrollIndicator={false}>
               {localTransactions.length ? localTransactions.map((transaction) => (
-                <View key={transaction.id} style={styles.transactionRow}>
+                <View key={transaction.id} style={[styles.transactionRow, isDark && styles.darkTransactionRow]}>
                   <View style={styles.transactionInfo}>
                     <TransactionItem transaction={transaction} />
                   </View>
@@ -420,7 +419,7 @@ export default function Dashboard({ navigation }) {
                   </View>
                 </View>
               )) : (
-                <Text style={styles.emptyText}>Nenhuma transação registrada.</Text>
+                <Text style={[styles.emptyText, isDark && styles.darkMuted]}>Nenhuma transação registrada.</Text>
               )}
             </ScrollView>
           </View>
@@ -433,17 +432,17 @@ export default function Dashboard({ navigation }) {
         visible={Boolean(transactionToDelete)}
         onRequestClose={() => setTransactionToDelete(null)}
       >
-        <View style={styles.confirmBackdrop}>
-          <View style={styles.confirmCard}>
-            <Text style={styles.confirmTitle}>Apagar transação?</Text>
-            <Text style={styles.confirmText}>
+        <View style={[styles.confirmBackdrop, isDark && styles.darkModalBackdrop]}>
+          <View style={[styles.confirmCard, isDark && styles.darkConfirmCard]}>
+            <Text style={[styles.confirmTitle, isDark && styles.darkText]}>Apagar transação?</Text>
+            <Text style={[styles.confirmText, isDark && styles.darkMuted]}>
               {transactionToDelete?.title} será removida e o saldo da conta será atualizado.
             </Text>
             <View style={styles.confirmActions}>
               <TouchableOpacity
                 activeOpacity={0.78}
                 onPress={() => setTransactionToDelete(null)}
-                style={styles.cancelAction}
+                style={[styles.cancelAction, isDark && styles.darkCancelAction]}
               >
                 <Text style={styles.cancelActionText}>Cancelar</Text>
               </TouchableOpacity>
@@ -547,16 +546,6 @@ const styles = StyleSheet.create({
     fontSize: 34,
     fontWeight: '900',
     marginTop: 10
-  },
-  balanceFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 24
-  },
-  balanceFooterText: {
-    color: '#E8E4FF',
-    fontSize: 13,
-    fontWeight: '800'
   },
   statsRow: {
     flexDirection: 'row',
@@ -749,6 +738,14 @@ const styles = StyleSheet.create({
     maxHeight: '84%',
     padding: 18
   },
+  darkModalBackdrop: {
+    backgroundColor: 'rgba(8, 6, 18, 0.70)'
+  },
+  darkTransactionsSheet: {
+    backgroundColor: colors.dark.background,
+    borderColor: colors.dark.border,
+    borderWidth: 1
+  },
   sheetHeader: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -767,6 +764,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginBottom: 10,
     paddingHorizontal: 10
+  },
+  darkTransactionRow: {
+    backgroundColor: colors.dark.surface,
+    borderColor: colors.dark.border,
+    borderWidth: 1
   },
   transactionInfo: {
     flex: 1
@@ -801,6 +803,13 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 340
   },
+  darkConfirmCard: {
+    backgroundColor: colors.dark.surface,
+    borderColor: colors.dark.border,
+    borderWidth: 1,
+    shadowColor: colors.dark.purpleGlow,
+    shadowOpacity: 0.22
+  },
   confirmTitle: {
     color: colors.text,
     fontSize: 18,
@@ -824,6 +833,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10
+  },
+  darkCancelAction: {
+    backgroundColor: colors.dark.tipCard,
+    borderColor: colors.dark.border,
+    borderWidth: 1
   },
   cancelActionText: {
     color: colors.purple,

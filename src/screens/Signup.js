@@ -10,6 +10,7 @@ import PremiumBackground from '../components/PremiumBackground';
 import PrimaryButton from '../components/PrimaryButton';
 import ScreenTopBar from '../components/ScreenTopBar';
 import { register } from '../services/authService';
+import { useAppearance } from '../theme/AppearanceContext';
 import { colors } from '../theme/colors';
 
 const goals = [
@@ -19,6 +20,8 @@ const goals = [
 ];
 
 export default function Signup({ navigation, route }) {
+  const { appearance } = useAppearance();
+  const isDark = appearance.darkMode;
   const [goal, setGoal] = useState('organize');
   const [name, setName] = useState('');
   const [email, setEmail] = useState(route.params?.email || '');
@@ -54,8 +57,8 @@ export default function Signup({ navigation, route }) {
         <AnimatedMascot delay={80} size={132} style={styles.mascot} />
 
         <FadeInView delay={260} style={styles.header}>
-          <Text style={styles.title}>Criar conta</Text>
-          <Text style={styles.subtitle}>Monte seu FinPibble e acompanhe seus dados reais.</Text>
+          <Text style={[styles.title, isDark && styles.darkText]}>Criar conta</Text>
+          <Text style={[styles.subtitle, isDark && styles.darkMuted]}>Monte seu FinPibble e acompanhe seus dados reais.</Text>
         </FadeInView>
 
         <View style={styles.form}>
@@ -91,7 +94,7 @@ export default function Signup({ navigation, route }) {
         </View>
 
         <FadeInView delay={780} style={styles.goalSection}>
-          <Text style={styles.sectionTitle}>Seu primeiro objetivo</Text>
+          <Text style={[styles.sectionTitle, isDark && styles.darkText]}>Seu primeiro objetivo</Text>
           <View style={styles.goalGrid}>
             {goals.map((item) => {
               const Icon = item.icon;
@@ -102,10 +105,10 @@ export default function Signup({ navigation, route }) {
                   activeOpacity={0.82}
                   key={item.id}
                   onPress={() => setGoal(item.id)}
-                  style={[styles.goalCard, selected && styles.goalCardActive]}
+                  style={[styles.goalCard, isDark && styles.darkGoalCard, selected && styles.goalCardActive, isDark && selected && styles.darkGoalCardActive]}
                 >
-                  <Icon size={20} color={selected ? colors.purple : colors.muted} />
-                  <Text style={[styles.goalText, selected && styles.goalTextActive]}>
+                  <Icon size={20} color={selected ? colors.purple : (isDark ? colors.dark.muted : colors.muted)} />
+                  <Text style={[styles.goalText, isDark && styles.darkMuted, selected && styles.goalTextActive]}>
                     {item.label}
                   </Text>
                 </TouchableOpacity>
@@ -124,7 +127,7 @@ export default function Signup({ navigation, route }) {
         </FadeInView>
 
         <FadeInView delay={1020} style={styles.loginRow}>
-          <Text style={styles.loginText}>Já possui conta?</Text>
+          <Text style={[styles.loginText, isDark && styles.darkMuted]}>Já possui conta?</Text>
           <TouchableOpacity activeOpacity={0.72} onPress={() => navigation.goBack()}>
             <Text style={styles.loginLink}>Entrar</Text>
           </TouchableOpacity>
@@ -132,11 +135,11 @@ export default function Signup({ navigation, route }) {
       </View>
 
       <Modal animationType="fade" transparent visible={successVisible} onRequestClose={finishSignup}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
+        <View style={[styles.modalBackdrop, isDark && styles.darkModalBackdrop]}>
+          <View style={[styles.modalCard, isDark && styles.darkModalCard]}>
             <Image source={require('../assets/mascotePibble.png')} style={styles.successMascot} />
-            <Text style={styles.modalTitle}>Conta criada</Text>
-            <Text style={styles.modalText}>
+            <Text style={[styles.modalTitle, isDark && styles.darkText]}>Conta criada</Text>
+            <Text style={[styles.modalText, isDark && styles.darkMuted]}>
               O Pibble preparou seu acesso. Agora você já pode criar contas, transações e metas.
             </Text>
             <PrimaryButton title="Ir para o app" onPress={finishSignup} />
@@ -172,6 +175,9 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     textAlign: 'center'
   },
+  darkText: {
+    color: colors.dark.text
+  },
   subtitle: {
     color: colors.muted,
     fontSize: 15,
@@ -179,6 +185,9 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginTop: 8,
     textAlign: 'center'
+  },
+  darkMuted: {
+    color: colors.dark.muted
   },
   form: {
     gap: 14
@@ -207,9 +216,17 @@ const styles = StyleSheet.create({
     minHeight: 54,
     paddingHorizontal: 16
   },
+  darkGoalCard: {
+    backgroundColor: colors.dark.surface,
+    borderColor: colors.dark.border
+  },
   goalCardActive: {
     backgroundColor: colors.softPurple,
     borderColor: colors.purple
+  },
+  darkGoalCardActive: {
+    backgroundColor: colors.dark.tipCard,
+    borderColor: colors.dark.purpleGlow
   },
   goalText: {
     color: colors.muted,
@@ -243,12 +260,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 22
   },
+  darkModalBackdrop: {
+    backgroundColor: 'rgba(8, 6, 18, 0.70)'
+  },
   modalCard: {
     backgroundColor: colors.card,
     borderRadius: 24,
     maxWidth: 380,
     padding: 22,
     width: '100%'
+  },
+  darkModalCard: {
+    backgroundColor: colors.dark.surface,
+    borderColor: colors.dark.border,
+    borderWidth: 1
   },
   successMascot: {
     alignSelf: 'center',

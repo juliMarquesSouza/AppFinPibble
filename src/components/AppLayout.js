@@ -3,10 +3,17 @@ import { KeyboardAvoidingView, Platform, SafeAreaView, ScrollView, StyleSheet, V
 import { colors } from '../theme/colors';
 import { useAppearance } from '../theme/AppearanceContext';
 
-export default function AppLayout({ children, scroll = true, contentStyle, overlay }) {
+export default function AppLayout({
+  children,
+  scroll = true,
+  contentStyle,
+  overlay,
+  hasFixedTabs = false,
+  fixedHeader
+}) {
   const { appearance } = useAppearance();
   const backgroundColor = appearance.darkMode ? '#171426' : appearance.backgroundColor;
-  const content = <View style={[styles.content, contentStyle]}>{children}</View>;
+  const content = <View style={[styles.content, hasFixedTabs && styles.fixedTabsContent, contentStyle]}>{children}</View>;
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor }]}>
@@ -14,8 +21,14 @@ export default function AppLayout({ children, scroll = true, contentStyle, overl
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoider}
       >
+        {fixedHeader ? (
+          <View style={[styles.fixedHeader, { backgroundColor }]}>
+            {fixedHeader}
+          </View>
+        ) : null}
         {scroll ? (
           <ScrollView
+            style={styles.scroll}
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
@@ -34,9 +47,22 @@ export default function AppLayout({ children, scroll = true, contentStyle, overl
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background
+    backgroundColor: colors.background,
+    ...(Platform.OS === 'web' ? {
+      height: '100vh',
+      maxHeight: '100vh',
+      overflow: 'hidden'
+    } : {})
   },
   keyboardAvoider: {
+    flex: 1
+  },
+  fixedHeader: {
+    paddingHorizontal: 22,
+    paddingTop: 18,
+    zIndex: 30
+  },
+  scroll: {
     flex: 1
   },
   scrollContent: {
@@ -47,6 +73,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
     paddingTop: 18,
     paddingBottom: 28
+  },
+  fixedTabsContent: {
+    paddingBottom: 124
   },
   overlay: {
     alignItems: 'center',

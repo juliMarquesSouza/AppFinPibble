@@ -9,12 +9,15 @@ import Input from '../components/Input';
 import PremiumBackground from '../components/PremiumBackground';
 import PrimaryButton from '../components/PrimaryButton';
 import { forgotPassword, login } from '../services/authService';
+import { useAppearance } from '../theme/AppearanceContext';
 import { colors } from '../theme/colors';
 
 const closedEyeMascot = require('../assets/pibbleOlhoFechado.png');
 const peekingMascot = require('../assets/pibbleespiando.png');
 
 export default function Login({ navigation }) {
+  const { appearance } = useAppearance();
+  const isDark = appearance.darkMode;
   const [email, setEmail] = useState('');
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
@@ -126,13 +129,13 @@ export default function Login({ navigation }) {
 
         <View style={styles.header}>
           <FadeInView delay={460}>
-            <Text style={styles.eyebrow}>Bem-vindo ao</Text>
+            <Text style={[styles.eyebrow, isDark && styles.darkText]}>Bem-vindo ao</Text>
           </FadeInView>
           <FadeInView delay={620}>
             <Text style={styles.title}>FinPibble</Text>
           </FadeInView>
           <FadeInView delay={780}>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.subtitle, isDark && styles.darkMuted]}>
               Organize suas finanças{'\n'}e construa seu patrimônio.
             </Text>
           </FadeInView>
@@ -232,27 +235,27 @@ export default function Login({ navigation }) {
         </View>
 
         <FadeInView delay={1540} style={styles.signupRow}>
-          <Text style={styles.signupText}>Não possui conta?</Text>
+          <Text style={[styles.signupText, isDark && styles.darkMuted]}>Não possui conta?</Text>
           <TouchableOpacity activeOpacity={0.72} onPress={() => navigation.navigate('Signup')}>
             <Text style={styles.signupLink}>Criar conta</Text>
           </TouchableOpacity>
         </FadeInView>
 
         <FadeInView delay={1680} style={styles.footer}>
-          <Text style={styles.footerText}>Desenvolvido por: Juliana Marques</Text>
+          <Text style={[styles.footerText, isDark && styles.darkMuted]}>Desenvolvido por: Juliana Marques</Text>
         </FadeInView>
       </View>
 
       <Modal animationType="fade" transparent visible={showForgot} onRequestClose={closeForgot}>
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
+        <View style={[styles.modalBackdrop, isDark && styles.darkModalBackdrop]}>
+          <View style={[styles.modalCard, isDark && styles.darkModalCard]}>
             <Image source={require('../assets/logoPibble.png')} style={styles.modalMascot} />
-            <Text style={styles.modalTitle}>
+            <Text style={[styles.modalTitle, isDark && styles.darkText]}>
               {forgotSent ? 'Tudo certo!' : 'Recuperar senha'}
             </Text>
-            <Text style={styles.modalText}>
+            <Text style={[styles.modalText, isDark && styles.darkMuted]}>
               {forgotSent
-                ? 'Enviamos instruções mocadas para o email informado.'
+                ? 'Geramos as instruções de recuperação para o email informado.'
                 : 'Digite seu email para receber as instruções de recuperação.'}
             </Text>
 
@@ -277,7 +280,7 @@ export default function Login({ navigation }) {
             />
             {!forgotSent ? (
               <TouchableOpacity activeOpacity={0.72} onPress={closeForgot} style={styles.cancelButton}>
-                <Text style={styles.cancelText}>Cancelar</Text>
+                <Text style={[styles.cancelText, isDark && styles.darkMuted]}>Cancelar</Text>
               </TouchableOpacity>
             ) : null}
           </View>
@@ -327,6 +330,9 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     textAlign: 'center'
   },
+  darkText: {
+    color: colors.dark.text
+  },
   title: {
     color: colors.purple,
     fontSize: 44,
@@ -343,6 +349,9 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     marginTop: 10,
     textAlign: 'center'
+  },
+  darkMuted: {
+    color: colors.dark.muted
   },
   form: {
     gap: 16
@@ -466,6 +475,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 22
   },
+  darkModalBackdrop: {
+    backgroundColor: 'rgba(8, 6, 18, 0.70)'
+  },
   modalCard: {
     backgroundColor: colors.card,
     borderRadius: 24,
@@ -476,6 +488,13 @@ const styles = StyleSheet.create({
     shadowRadius: 30,
     width: '100%',
     maxWidth: 380
+  },
+  darkModalCard: {
+    backgroundColor: colors.dark.surface,
+    borderColor: colors.dark.border,
+    borderWidth: 1,
+    shadowColor: colors.dark.purpleGlow,
+    shadowOpacity: 0.24
   },
   modalMascot: {
     alignSelf: 'center',

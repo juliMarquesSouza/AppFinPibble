@@ -7,8 +7,9 @@ import AppLayout from '../components/AppLayout';
 import ScreenTopBar from '../components/ScreenTopBar';
 import TransactionItem from '../components/TransactionItem';
 import { getTransactions } from '../services/transactionsService';
+import { useAppearance } from '../theme/AppearanceContext';
 import { colors } from '../theme/colors';
-import { formatCurrency } from '../utils/formatters';
+import { formatCurrency, formatTransactionDate } from '../utils/formatters';
 
 const actions = [
   { label: 'Pix', icon: Send, color: colors.purple },
@@ -18,6 +19,8 @@ const actions = [
 ];
 
 export default function BankAccount({ navigation, route }) {
+  const { appearance } = useAppearance();
+  const isDark = appearance.darkMode;
   const account =
     route.params?.account ||
     {
@@ -50,7 +53,7 @@ export default function BankAccount({ navigation, route }) {
               account: transaction.account?.name || account.name,
               amount: transaction.amount,
               type: transaction.type,
-              date: new Date(transaction.date).toLocaleDateString('pt-BR', {
+              date: formatTransactionDate(transaction.date, {
                 day: '2-digit',
                 month: 'short'
               })
@@ -72,7 +75,7 @@ export default function BankAccount({ navigation, route }) {
 
   return (
     <AppLayout>
-      <ScreenTopBar navigation={navigation} />
+      <ScreenTopBar navigation={navigation} showMenu />
 
       <LinearGradient
         colors={[account.color, colors.purpleDark]}
@@ -90,24 +93,24 @@ export default function BankAccount({ navigation, route }) {
         {actions.map((action) => {
           const Icon = action.icon;
           return (
-            <TouchableOpacity activeOpacity={0.84} key={action.label} style={styles.action}>
+            <TouchableOpacity activeOpacity={0.84} key={action.label} style={[styles.action, isDark && styles.darkAction]}>
               <View style={[styles.actionIcon, { backgroundColor: `${action.color}25` }]}>
                 <Icon size={20} color={action.color} />
               </View>
-              <Text style={styles.actionText}>{action.label}</Text>
+              <Text style={[styles.actionText, isDark && styles.darkText]}>{action.label}</Text>
             </TouchableOpacity>
           );
         })}
       </View>
 
-      <Text style={styles.sectionTitle}>Histórico da conta</Text>
-      <View style={styles.historyCard}>
+      <Text style={[styles.sectionTitle, isDark && styles.darkText]}>Histórico da conta</Text>
+      <View style={[styles.historyCard, isDark && styles.darkHistoryCard]}>
         {accountTransactions.length ? (
           accountTransactions.map((transaction) => (
             <TransactionItem key={transaction.id} transaction={transaction} />
           ))
         ) : (
-          <Text style={styles.emptyText}>Nenhuma transação registrada nesta conta.</Text>
+          <Text style={[styles.emptyText, isDark && styles.darkMuted]}>Nenhuma transação registrada nesta conta.</Text>
         )}
       </View>
     </AppLayout>
@@ -158,6 +161,11 @@ const styles = StyleSheet.create({
     minHeight: 92,
     paddingHorizontal: 6
   },
+  darkAction: {
+    backgroundColor: colors.dark.surface,
+    borderColor: colors.dark.border,
+    borderWidth: 1
+  },
   actionIcon: {
     alignItems: 'center',
     borderRadius: 14,
@@ -171,6 +179,9 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     textAlign: 'center'
   },
+  darkText: {
+    color: colors.dark.text
+  },
   sectionTitle: {
     color: colors.text,
     fontSize: 18,
@@ -182,11 +193,20 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     paddingHorizontal: 16
   },
+  darkHistoryCard: {
+    backgroundColor: colors.dark.surface,
+    borderColor: colors.dark.border,
+    borderWidth: 1
+  },
   emptyText: {
     color: colors.muted,
     fontSize: 13,
     fontWeight: '700',
     paddingVertical: 18,
     textAlign: 'center'
+  }
+  ,
+  darkMuted: {
+    color: colors.dark.muted
   }
 });

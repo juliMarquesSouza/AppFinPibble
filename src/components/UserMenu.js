@@ -1,14 +1,13 @@
-import { useState } from 'react';
 import { Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { LogOut, Menu, Moon, Palette } from 'lucide-react-native';
+import { LogOut, Menu, Moon } from 'lucide-react-native';
 
 import { clearSession } from '../services/apiClient';
 import { useAppearance } from '../theme/AppearanceContext';
 import { colors } from '../theme/colors';
 
 export default function UserMenu({ navigation, visible, onClose, onOpen }) {
-  const { appearance, backgroundOptions, setBackgroundColor, toggleDarkMode } = useAppearance();
-  const [appearanceOpen, setAppearanceOpen] = useState(false);
+  const { appearance, toggleDarkMode } = useAppearance();
+  const isDark = appearance.darkMode;
 
   const logout = async () => {
     onClose();
@@ -22,49 +21,25 @@ export default function UserMenu({ navigation, visible, onClose, onOpen }) {
     <>
       <TouchableOpacity activeOpacity={0.82} onPress={onOpen} style={styles.trigger}>
         <Image source={require('../assets/logoPibble.png')} style={styles.avatar} />
-        <View style={styles.menuBadge}>
-          <Menu size={13} color={colors.purple} />
+        <View style={[styles.menuBadge, isDark && styles.darkMenuBadge]}>
+          <Menu size={13} color={isDark ? colors.dark.text : colors.purple} />
         </View>
       </TouchableOpacity>
 
       <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose}>
-        <View style={styles.backdrop}>
+        <View style={[styles.backdrop, isDark && styles.darkBackdrop]}>
           <TouchableOpacity activeOpacity={1} onPress={onClose} style={styles.closeLayer} />
-          <View style={styles.menu}>
+          <View style={[styles.menu, isDark && styles.darkMenu]}>
             <TouchableOpacity
               activeOpacity={0.78}
-              onPress={() => setAppearanceOpen((current) => !current)}
+              onPress={toggleDarkMode}
               style={styles.item}
             >
-              <Palette size={18} color={colors.purple} />
-              <Text style={styles.itemText}>Aparência</Text>
+              <Moon size={18} color={isDark ? '#CDBDFF' : colors.purple} />
+              <Text style={[styles.itemText, isDark && styles.darkItemText]}>
+                {isDark ? 'Modo noturno ativo' : 'Modo noturno'}
+              </Text>
             </TouchableOpacity>
-
-            {appearanceOpen ? (
-              <View style={styles.appearancePanel}>
-                <TouchableOpacity activeOpacity={0.78} onPress={toggleDarkMode} style={styles.modeRow}>
-                  <Moon size={16} color={appearance.darkMode ? colors.purple : colors.muted} />
-                  <Text style={styles.modeText}>
-                    {appearance.darkMode ? 'Modo noturno ativo' : 'Modo noturno'}
-                  </Text>
-                </TouchableOpacity>
-                {/* <View style={styles.swatches}>
-                  {backgroundOptions.map((option) => (
-                    <TouchableOpacity
-                      activeOpacity={0.78}
-                      key={option.value}
-                      onPress={() => setBackgroundColor(option.value)}
-                      style={[
-                        styles.swatchButton,
-                        appearance.backgroundColor === option.value && styles.swatchButtonActive
-                      ]}
-                    >
-                      <View style={[styles.swatch, { backgroundColor: option.value }]} />
-                    </TouchableOpacity>
-                  ))}
-                </View> */}
-              </View>
-            ) : null}
 
             <TouchableOpacity activeOpacity={0.78} onPress={logout} style={styles.item}>
               <LogOut size={18} color={colors.danger} />
@@ -100,12 +75,19 @@ const styles = StyleSheet.create({
     right: 0,
     width: 24
   },
+  darkMenuBadge: {
+    backgroundColor: colors.dark.surfaceAlt,
+    borderColor: colors.dark.border
+  },
   backdrop: {
     alignItems: 'flex-end',
     backgroundColor: 'rgba(31, 41, 55, 0.22)',
     flex: 1,
     paddingHorizontal: 22,
     paddingTop: 76
+  },
+  darkBackdrop: {
+    backgroundColor: 'rgba(8, 6, 18, 0.62)'
   },
   closeLayer: {
     ...StyleSheet.absoluteFillObject
@@ -120,6 +102,13 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     width: 210
   },
+  darkMenu: {
+    backgroundColor: colors.dark.surface,
+    borderColor: colors.dark.border,
+    borderWidth: 1,
+    shadowColor: colors.dark.purpleGlow,
+    shadowOpacity: 0.22
+  },
   item: {
     alignItems: 'center',
     borderRadius: 12,
@@ -133,49 +122,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '900'
   },
+  darkItemText: {
+    color: colors.dark.text
+  },
   logoutText: {
     color: colors.danger
-  },
-  appearancePanel: {
-    backgroundColor: colors.softPurple,
-    borderRadius: 14,
-    gap: 10,
-    marginBottom: 6,
-    padding: 10
-  },
-  modeRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 8
-  },
-  modeText: {
-    color: colors.text,
-    flex: 1,
-    fontSize: 12,
-    fontWeight: '800'
-  },
-  swatches: {
-    flexDirection: 'row',
-    gap: 8
-  },
-  swatchButton: {
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderColor: 'transparent',
-    borderRadius: 999,
-    borderWidth: 2,
-    height: 30,
-    justifyContent: 'center',
-    width: 30
-  },
-  swatchButtonActive: {
-    borderColor: colors.purple
-  },
-  swatch: {
-    borderColor: colors.border,
-    borderRadius: 999,
-    borderWidth: 1,
-    height: 20,
-    width: 20
   }
 });
