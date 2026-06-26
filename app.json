@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "FinPibble",
+    "slug": "finpibble",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./src/assets/logoPibble.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./src/assets/logoPibble.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F8F7FC"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": false
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/logoPibble.png",
+        "backgroundColor": "#F8F7FC"
+      },
+      "edgeToEdgeEnabled": true
+    }
+  }
+}
